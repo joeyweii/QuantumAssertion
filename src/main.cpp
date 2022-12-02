@@ -18,10 +18,6 @@ int main(int argc, char **argv)
                                                              "0: disable 1: enable") 
     ("circuit1", po::value<std::string>()->implicit_value(""), "1st circuit for equivalence checking.")
     ("circuit2", po::value<std::string>()->implicit_value(""), "2nd circuit for equivalence checking.")
-    ("p", po::value<bool>()->default_value(false), "conduct full or partial equivalence checking.\n"
-                                                    "0: full 1: partial")
-    ("nQd", po::value<int>()->default_value(0), "(only for --p 1) the number of data qubits.")
-    ("nQm", po::value<int>()->default_value(0), "(only for --p 1) the number of measured qubits.")
     ;
 
     po::variables_map vm;
@@ -64,59 +60,6 @@ int main(int argc, char **argv)
 
     n = std::max(nQ1, nQ2);
 
-    bool p = vm["p"].as<bool>();
-    
-    int nQd, nQm; 
-    
-    EqType eqType;
-
-    if(!p)
-    {
-        if(nQ1 != nQ2)
-        {
-            std::cerr << "The two circuits have different number of qubits." << std::endl;
-            return 0;
-        }
-
-        eqType = EqType::Feq;
-
-        nQd = -1;
-        nQm = -1;
-    }
-    else
-    {
-        nQd = vm["nQd"].as<int>();
-        
-        if(nQd < 0)
-        {
-            std::cerr << "nQd should be a positive integer." << std::endl;
-            return 0;
-        }
-        else if(nQd > nQ1 || nQd > nQ2)
-        {
-            std::cerr << "nQd cannot be larger than #qubit in circuit1 and circuit2." << std::endl;
-            return 0;
-        }
-
-        nQm = vm["nQm"].as<int>();
-
-        if(nQm < 0)
-        {
-            std::cerr << "nQm should be a positive integer." << std::endl;
-            return 0;
-        }
-        else if(nQm > nQ1 || nQm > nQ2)
-        {
-            std::cerr << "nQm cannot be larger than #qubit in circuit1 and circuit2." << std::endl;
-            return 0;
-        }
-
-        if(nQd == n) 
-            eqType = EqType::PeqS;
-        else
-            eqType = EqType::Peq;
-    }
-
     struct timeval tStart, tFinish;
     double elapsedTime;
     double runtime;
@@ -124,7 +67,7 @@ int main(int argc, char **argv)
 
     gettimeofday(&tStart, NULL);
 
-    EquivalenceChecker checker(gates, qubits, n, nQd, nQm, isReorder, eqType);
+    EquivalenceChecker checker(gates, qubits, n, isReorder);
 
     checker.check();
 

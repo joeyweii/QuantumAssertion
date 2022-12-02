@@ -3,13 +3,6 @@
 
 #include "bddSystem.h"
 
-enum class EqType 
-{ 
-    Feq, // Full equivalence 
-    Peq, // Partial equivalence 
-    PeqS // Partial equivalence Special case
-};
-
 class EquivalenceChecker : public BDDSystem
 {
 public:
@@ -19,10 +12,7 @@ public:
         std::vector<std::vector<GateType>>& gates,
         std::vector<std::vector<std::vector<int>>>& qubits,
         int n,
-        int nQd, 
-        int nQm, 
-        bool isReorder,
-        EqType eqType
+        bool isReorder
     );
 
     ~EquivalenceChecker()  
@@ -41,7 +31,6 @@ private:
     int _ratio;                                             // gate count ratio. |circuit2|/|circuit1|
     bool _isEq;                                             // if the result is equivalent or not.
     bool _isGatesSwap;                                      // if circuit1 and circuit2 are swapped.
-    EqType _eqType;                                         // the equivalence checking type (Feq/Peq/PeqS)  
 
     void invertCircuit(std::vector<GateType> &gate);
     void init();

@@ -6,23 +6,17 @@ EquivalenceChecker::EquivalenceChecker
     std::vector<std::vector<GateType>>& gates,
     std::vector<std::vector<std::vector<int>>>& qubits,
     int n,
-    int nQd, 
-    int nQm, 
-    bool isReorder,
-    EqType eqType
+    bool isReorder
 )
 :   BDDSystem
     ( 
-        (eqType == EqType::Peq)? 2 : 1, // nCircuit
+		1,
         isReorder
     )
 {
     _gates = gates;
     _qubits = qubits;
     _n = n;
-    _nQd = nQd;
-    _nQm = nQm;
-    _eqType = eqType;
     _isGatesSwap = false;
 
     // the circuit with larger gatecount is stored in gates[1]
@@ -51,22 +45,8 @@ EquivalenceChecker::EquivalenceChecker
 void EquivalenceChecker::check()
 {
     init();
-    if(_eqType == EqType::Peq)
-    {
-        extract(0);
-        extract(1);
-        checkPeq();
-    }
-    else if(_eqType == EqType::PeqS)
-    {
-        calculateMiter();
-        checkPeqS();
-    }
-    else if(_eqType == EqType::Feq)
-    {
-        calculateMiter();
-        checkFeq();
-    }
+    calculateMiter();
+    checkFeq();
     printResult();
 }
 
@@ -111,13 +91,6 @@ void EquivalenceChecker::invertCircuit(std::vector<GateType> &gate)
 
 void EquivalenceChecker::init()
 {
-    if (_eqType == EqType::PeqS)
-    {
-        int nAncilla = _n - _nQd;
-        if (_nQm > nAncilla)
-            _n += _nQm - nAncilla;
-    }
-
     ddInitialize();
     initIdentity();
 }
@@ -506,12 +479,9 @@ void EquivalenceChecker::printResult() const
 {
     std::cout << "{\n";
     std::cout << "\t#Qubits (n): " << _n << '\n';
-    if(_eqType != EqType::Feq) std::cout << "\t#Data qubits (d): " << _nQd << '\n';
-    if(_eqType != EqType::Feq) std::cout << "\t#Measured qubits (m): " << _nQm << '\n';
     std::cout << "\tGatecount of circuit1: " << ((_isGatesSwap)? _gates[1].size() : _gates[0].size()) << '\n';
     std::cout << "\tGatecount of circuit2: " << ((_isGatesSwap)? _gates[0].size() : _gates[1].size()) << '\n';
-    if(_eqType == EqType::Feq) std::cout << "\tIs equivalent? ";
-    else std::cout << "\tIs partially equivalent? ";
+	std::cout << "\tIs equivalent? ";
     if (_isEq) std::cout << "Yes" << std::endl;
     else std::cout << "No" << std::endl;
     std::cout << "}\n";

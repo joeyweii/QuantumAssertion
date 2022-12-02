@@ -43,10 +43,10 @@ public:
 
 private:
     DdManager *_ddManager;      // BDD manager.
-    DdNode ****_allBDD;         // BDDs. [circuit_index][w=4][r]
+    DdNode ****_allBDD;         // BDDs. [nCircuits][w=4][r]
     DdNode *_zeroNode;          // pointer to the zero node in BDD.
     DdNode *_identityNode;      // pointer to the root node of the identity BDD.
-    int *_k;                    // k in algebraic representation.
+    int* _k;                    // k in algebraic representation.
     int _nCircuit;              // # of circuits. For Feq/FeqS nCircuit = 1, For Feq/FeqS nCircuit = 2.
     int _n;                     // # of qubits.
     int _r;                     // resolution of integers.
