@@ -16,8 +16,7 @@ int main(int argc, char **argv)
     ("help", "produce help message.")
     ("reorder", po::value<bool>()->default_value(true), "allow variable reordering or not.\n"
                                                              "0: disable 1: enable") 
-    ("circuit1", po::value<std::string>()->implicit_value(""), "1st circuit for equivalence checking.")
-    ("circuit2", po::value<std::string>()->implicit_value(""), "2nd circuit for equivalence checking.")
+    ("circuit", po::value<std::string>()->implicit_value(""), "1st circuit for equivalence checking.")
     ;
 
     po::variables_map vm;
@@ -34,31 +33,20 @@ int main(int argc, char **argv)
     bool isReorder = vm["reorder"].as<bool>();
 
     // Parse QASM files
-    std::vector<std::vector<GateType>> gates(2);
-    std::vector<std::vector<std::vector<int>>> qubits(2);
-    int nQ1, nQ2, n; 
+    std::vector<GateType> gates;
+    std::vector<std::vector<int>> qubits;
+    int n; 
 
     std::ifstream inFile;
 
-    inFile.open(vm["circuit1"].as<std::string>()); 
+    inFile.open(vm["circuit"].as<std::string>()); 
     if (!inFile)
     {
-        std::cerr << "Circuit1 file doesn't exist." << std::endl;
+        std::cerr << "Circuit file doesn't exist." << std::endl;
         return 0;
     }
-    qasmParser(inFile, gates[0], qubits[0], nQ1);
+    qasmParser(inFile, gates, qubits, n);
     inFile.close();
-
-    inFile.open(vm["circuit2"].as<std::string>());
-    if (!inFile)
-    {
-        std::cerr << "Circuit2 file doesn't exist." << std::endl;
-        return 0;
-    }
-    qasmParser(inFile, gates[1], qubits[1], nQ2);
-    inFile.close();
-
-    n = std::max(nQ1, nQ2);
 
     struct timeval tStart, tFinish;
     double elapsedTime;

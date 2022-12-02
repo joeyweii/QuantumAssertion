@@ -19,9 +19,9 @@ class BDDSystem
 friend class EquivalenceChecker;
 
 public:
-    BDDSystem(int nCircuit, bool isReorder)
+    BDDSystem(bool isReorder)
     :   _ddManager(nullptr), _allBDD(nullptr), _zeroNode(nullptr), _identityNode(nullptr),
-        _k(0), _nCircuit(nCircuit), _n(0), _r(32), _w(4), _inc(3), _isReorder(isReorder), _nodeCount(0)
+        _k(0), _n(0), _r(32), _w(4), _inc(3), _isReorder(isReorder), _nodeCount(0)
     {}
 
     ~BDDSystem()  
@@ -47,7 +47,6 @@ private:
     DdNode *_zeroNode;          // pointer to the zero node in BDD.
     DdNode *_identityNode;      // pointer to the root node of the identity BDD.
     int* _k;                    // k in algebraic representation.
-    int _nCircuit;              // # of circuits. For Feq/FeqS nCircuit = 1, For Feq/FeqS nCircuit = 2.
     int _n;                     // # of qubits.
     int _r;                     // resolution of integers.
     int _w;                     // # of integers = 4.

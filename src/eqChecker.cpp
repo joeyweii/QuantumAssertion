@@ -3,32 +3,19 @@
 // Constructor
 EquivalenceChecker::EquivalenceChecker
 (
-    std::vector<std::vector<GateType>>& gates,
-    std::vector<std::vector<std::vector<int>>>& qubits,
+    std::vector<GateType>& gates,
+    std::vector<std::vector<int>>& qubits,
     int n,
     bool isReorder
 )
 :   BDDSystem
     ( 
-		1,
         isReorder
     )
 {
     _gates = gates;
     _qubits = qubits;
     _n = n;
-    _isGatesSwap = false;
-
-    // the circuit with larger gatecount is stored in gates[1]
-    if (_gates[0].size() > _gates[1].size())
-    {
-        _isGatesSwap = true;
-        _gates[0].swap(_gates[1]);
-        _qubits[0].swap(_qubits[1]);
-    }
-
-    // compute ratio
-    _ratio = round(((double) _gates[1].size()) / ((double) _gates[0].size()));
 }
 
 /**Function*************************************************************
@@ -46,35 +33,7 @@ void EquivalenceChecker::check()
 {
     init();
     calculateMiter();
-    checkFeq();
     printResult();
-}
-
-/**Function*************************************************************
-
-  Synopsis    [Invert the gates in the given circuit.]
-
-  Description []
-
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-
-void EquivalenceChecker::invertCircuit(std::vector<GateType> &gate)
-{
-    for (int i = 0; i < gate.size(); i++)
-    {
-        if (gate[i] == GateType::S) gate[i] = GateType::SDG;
-        else if (gate[i] == GateType::SDG) gate[i] = GateType::S;
-        else if (gate[i] == GateType::T) gate[i] = GateType::TDG;
-        else if (gate[i] == GateType::TDG) gate[i] = GateType::T;
-        else if (gate[i] == GateType::RX_PI_2) gate[i] = GateType::RX_PI_2_DG;
-        else if (gate[i] == GateType::RX_PI_2_DG) gate[i] = GateType::RX_PI_2;
-        else if (gate[i] == GateType::RY_PI_2) gate[i] = GateType::RY_PI_2_DG;
-        else if (gate[i] == GateType::RY_PI_2_DG) gate[i] = GateType::RY_PI_2;
-    }
 }
 
 /**Function*************************************************************
@@ -174,57 +133,17 @@ void EquivalenceChecker::applyGate(GateType type, std::vector<int> qubit, bool r
 ***********************************************************************/
 void EquivalenceChecker::calculateMiter()
 {
-    int cntCir0 = 0, cntCir1 = 0;
+    int cntCir = 0;
 
     if (_isReorder) Cudd_AutodynEnable(_ddManager, CUDD_REORDER_SYMM_SIFT);
 
-    invertCircuit(_gates[1]);
-    while (cntCir0 < _gates[0].size() || cntCir1 < _gates[1].size())
+    while (cntCir < _gates.size())
     {
-        // apply 1 gate from gates[0]
-        if (cntCir0 < _gates[0].size())
-        {
-            applyGate(_gates[0][cntCir0], _qubits[0][cntCir0], false);
-            cntCir0++;
-        }
-        // apply ratio gate(s) from gates[1]
-        while(  cntCir1 * _gates[0].size() < cntCir0 * _gates[1].size()  &&  cntCir1 < _gates[1].size()   )  
-        {
-            applyGate(_gates[1][cntCir1], _qubits[1][cntCir1], true);
-            cntCir1++;
-        }
+        applyGate(_gates[cntCir], _qubits[cntCir], false);
+        cntCir++;
     }
-    invertCircuit(_gates[1]);
 
     if (_isReorder) Cudd_AutodynDisable(_ddManager);
-}
-
-/**Function*************************************************************
-
-  Synopsis    [Check if two circuits are fully equivalent.]
-
-  Description []
-
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-void EquivalenceChecker::checkFeq()
-{
-    for (int i = 0; i < _w; i++)
-    {
-        for (int j = 0; j < _r; j++)
-        {
-            if(!(_allBDD[i][j] == _identityNode || _allBDD[i][j] == _zeroNode))
-            {
-                _isEq = 0;
-                return;
-            }
-        }
-    }
-    
-    _isEq = 1;
 }
 
 /**Function*************************************************************
@@ -242,11 +161,7 @@ void EquivalenceChecker::printResult() const
 {
     std::cout << "{\n";
     std::cout << "\t#Qubits (n): " << _n << '\n';
-    std::cout << "\tGatecount of circuit1: " << ((_isGatesSwap)? _gates[1].size() : _gates[0].size()) << '\n';
-    std::cout << "\tGatecount of circuit2: " << ((_isGatesSwap)? _gates[0].size() : _gates[1].size()) << '\n';
-	std::cout << "\tIs equivalent? ";
-    if (_isEq) std::cout << "Yes" << std::endl;
-    else std::cout << "No" << std::endl;
+    std::cout << "\tGatecount of circuit: " << _gates.size() << '\n';
     std::cout << "}\n";
 }
 
