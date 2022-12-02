@@ -106,35 +106,35 @@ void EquivalenceChecker::init()
   SeeAlso     []
 
 ***********************************************************************/
-void EquivalenceChecker::applyGate(int ithCircuit, GateType type, std::vector<int> qubit, bool right)
+void EquivalenceChecker::applyGate(GateType type, std::vector<int> qubit, bool right)
 {
     if (right) for (int i = 0; i < qubit.size(); i++) qubit[i] += _n;
 
-    if (type == GateType::X) PauliX(ithCircuit, qubit[0]);
-    else if (type == GateType::Y) PauliY(ithCircuit, qubit[0], right);
-    else if (type == GateType::Z) PauliZ(ithCircuit, qubit);
-    else if (type == GateType::H) Hadamard(ithCircuit, qubit[0]);
-    else if (type == GateType::S) Phase_shift(ithCircuit, 2, qubit[0]);
-    else if (type == GateType::SDG) Phase_shift_dagger(ithCircuit, -2, qubit[0]);
-    else if (type == GateType::T) Phase_shift(ithCircuit, 4, qubit[0]);
-    else if (type == GateType::TDG) Phase_shift_dagger(ithCircuit, -4, qubit[0]);
-    else if (type == GateType::RX_PI_2) rx_pi_2(ithCircuit, qubit[0], false);
-    else if (type == GateType::RX_PI_2_DG) rx_pi_2(ithCircuit, qubit[0], true);
-    else if (type == GateType::RY_PI_2) ry_pi_2(ithCircuit, qubit[0], right^false);
-    else if (type == GateType::RY_PI_2_DG) ry_pi_2(ithCircuit, qubit[0], right^true);
+    if (type == GateType::X) PauliX(qubit[0]);
+    else if (type == GateType::Y) PauliY(qubit[0], right);
+    else if (type == GateType::Z) PauliZ(qubit);
+    else if (type == GateType::H) Hadamard(qubit[0]);
+    else if (type == GateType::S) Phase_shift(2, qubit[0]);
+    else if (type == GateType::SDG) Phase_shift_dagger(-2, qubit[0]);
+    else if (type == GateType::T) Phase_shift(4, qubit[0]);
+    else if (type == GateType::TDG) Phase_shift_dagger(-4, qubit[0]);
+    else if (type == GateType::RX_PI_2) rx_pi_2(qubit[0], false);
+    else if (type == GateType::RX_PI_2_DG) rx_pi_2(qubit[0], true);
+    else if (type == GateType::RY_PI_2) ry_pi_2(qubit[0], right^false);
+    else if (type == GateType::RY_PI_2_DG) ry_pi_2(qubit[0], right^true);
     else if (type == GateType::CX)
     {
         std::vector<int> ncont(0);
         int targ = qubit[1];
         qubit.pop_back();
-        Toffoli(ithCircuit, targ, qubit, ncont);
+        Toffoli(targ, qubit, ncont);
         ncont.clear();
     }
-    else if (type == GateType::CZ) PauliZ(ithCircuit, qubit);
+    else if (type == GateType::CZ) PauliZ(qubit);
     else if (type == GateType::SWAP)
     {
         std::vector<int> cont(0);
-        Fredkin(ithCircuit, qubit[0], qubit[1], cont);
+        Fredkin(qubit[0], qubit[1], cont);
         cont.clear();
     }
     else if (type == GateType::CSWAP)
@@ -142,14 +142,14 @@ void EquivalenceChecker::applyGate(int ithCircuit, GateType type, std::vector<in
         int swapA = qubit[1], swapB = qubit[2];
         qubit.pop_back();
         qubit.pop_back();
-        Fredkin(ithCircuit, swapA, swapB, qubit);
+        Fredkin(swapA, swapB, qubit);
     }
     else if (type == GateType::CCX)
     {
         std::vector<int> ncont(0);
         int targ = qubit.back();
         qubit.pop_back();
-        Toffoli(ithCircuit, targ, qubit, ncont);
+        Toffoli(targ, qubit, ncont);
         ncont.clear();
     }
 
@@ -184,13 +184,13 @@ void EquivalenceChecker::calculateMiter()
         // apply 1 gate from gates[0]
         if (cntCir0 < _gates[0].size())
         {
-            applyGate(0, _gates[0][cntCir0], _qubits[0][cntCir0], false);
+            applyGate(_gates[0][cntCir0], _qubits[0][cntCir0], false);
             cntCir0++;
         }
         // apply ratio gate(s) from gates[1]
         while(  cntCir1 * _gates[0].size() < cntCir0 * _gates[1].size()  &&  cntCir1 < _gates[1].size()   )  
         {
-            applyGate(0, _gates[1][cntCir1], _qubits[1][cntCir1], true);
+            applyGate(_gates[1][cntCir1], _qubits[1][cntCir1], true);
             cntCir1++;
         }
     }
@@ -216,7 +216,7 @@ void EquivalenceChecker::checkFeq()
     {
         for (int j = 0; j < _r; j++)
         {
-            if(!(_allBDD[0][i][j] == _identityNode || _allBDD[0][i][j] == _zeroNode))
+            if(!(_allBDD[i][j] == _identityNode || _allBDD[i][j] == _zeroNode))
             {
                 _isEq = 0;
                 return;

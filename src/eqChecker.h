@@ -32,9 +32,8 @@ private:
 
     void invertCircuit(std::vector<GateType> &gate);
     void init();
-    void applyGate(int ithCircuit, GateType type, std::vector<int> qubit, bool right);
+    void applyGate(GateType type, std::vector<int> qubit, bool right);
     void calculateMiter();
-    void extract(int ithCircuit);
     void checkFeq();
     void printResult() const;
 

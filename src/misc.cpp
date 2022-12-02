@@ -32,15 +32,10 @@ void BDDSystem::ddInitialize()
 ***********************************************************************/
 void BDDSystem::initIdentity()
 {
-    _k = new int [_nCircuit];
-    _allBDD = new DdNode ***[_nCircuit];
-    for (int ithCircuit = 0; ithCircuit < _nCircuit; ithCircuit++){
-        _k[ithCircuit] = 0;
-
         DdNode *tmp, *tmp1, *tmp2;
-        _allBDD[ithCircuit] = new DdNode **[_w];
+        _allBDD = new DdNode **[_w];
         for (int i = 0; i < _w; i++)
-            _allBDD[ithCircuit][i] = new DdNode *[_r];
+            _allBDD[i] = new DdNode *[_r];
 
         // reorder into a better order for identity
         int * permut = new int[2*_n];
@@ -58,11 +53,11 @@ void BDDSystem::initIdentity()
             {
                 for (int j = 0; j < _w - 1; j++)
                 {
-                    _allBDD[ithCircuit][j][i] = Cudd_Not(Cudd_ReadOne(_ddManager));
-                    Cudd_Ref(_allBDD[ithCircuit][j][i]);
+                    _allBDD[j][i] = Cudd_Not(Cudd_ReadOne(_ddManager));
+                    Cudd_Ref(_allBDD[j][i]);
                 }
-                _allBDD[ithCircuit][_w - 1][i] = Cudd_ReadOne(_ddManager);
-                Cudd_Ref(_allBDD[ithCircuit][_w - 1][i]);
+                _allBDD[_w - 1][i] = Cudd_ReadOne(_ddManager);
+                Cudd_Ref(_allBDD[_w - 1][i]);
                 for (int j = _n - 1; j >= 0; j--)
                 {
                     tmp1 = Cudd_bddAnd(_ddManager, Cudd_Not(Cudd_bddIthVar(_ddManager, j)), Cudd_Not(Cudd_bddIthVar(_ddManager, j+_n)));
@@ -73,28 +68,24 @@ void BDDSystem::initIdentity()
                     Cudd_Ref(tmp);
                     Cudd_RecursiveDeref(_ddManager, tmp1);
                     Cudd_RecursiveDeref(_ddManager, tmp2);
-                    tmp1 = Cudd_bddAnd(_ddManager, _allBDD[ithCircuit][_w - 1][i], tmp);
+                    tmp1 = Cudd_bddAnd(_ddManager, _allBDD[_w - 1][i], tmp);
                     Cudd_Ref(tmp1);
-                    Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][_w - 1][i]);
-                    _allBDD[ithCircuit][_w - 1][i] = tmp1;
+                    Cudd_RecursiveDeref(_ddManager, _allBDD[_w - 1][i]);
+                    _allBDD[_w - 1][i] = tmp1;
                 }
 
-                if(ithCircuit == 0)
-                {
-                    _identityNode = _allBDD[ithCircuit][_w - 1][i];
-                    Cudd_Ref(_identityNode);
-                }
+                _identityNode = _allBDD[_w - 1][i];
+                Cudd_Ref(_identityNode);
              }
             else
             {
                 for (int j = 0; j < _w; j++)
                 {
-                    _allBDD[ithCircuit][j][i] = Cudd_Not(Cudd_ReadOne(_ddManager));
-                    Cudd_Ref(_allBDD[ithCircuit][j][i]);
+                    _allBDD[j][i] = Cudd_Not(Cudd_ReadOne(_ddManager));
+                    Cudd_Ref(_allBDD[j][i]);
                 }
             }
         }
-    }
 }
 
 /**Function*************************************************************

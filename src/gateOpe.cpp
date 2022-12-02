@@ -4,7 +4,7 @@
 Apply gate on the bit slicing BDD system.
 */
 
-void BDDSystem::Toffoli(int ithCircuit, int targ, std::vector<int> cont, std::vector<int> ncont)
+void BDDSystem::Toffoli(int targ, std::vector<int> cont, std::vector<int> ncont)
 {
     assert((cont.size() + ncont.size()) < _n);
     int IsBadtarg = 0;
@@ -49,14 +49,14 @@ void BDDSystem::Toffoli(int ithCircuit, int targ, std::vector<int> cont, std::ve
         g = tmp;
     }
 
-    for (int i = 0; i < _w; i++) // F = _allBDD[ithCircuit][i][j]
+    for (int i = 0; i < _w; i++) // F = _allBDD[i][j]
     {
         for (int j = 0; j < _r; j++)
         {
             // term1
             term1 = Cudd_ReadOne(_ddManager);
             Cudd_Ref(term1);
-            tmp = Cudd_bddAnd(_ddManager, _allBDD[ithCircuit][i][j], term1);
+            tmp = Cudd_bddAnd(_ddManager, _allBDD[i][j], term1);
             Cudd_Ref(tmp);
             Cudd_RecursiveDeref(_ddManager, term1);
             term1 = tmp;
@@ -66,7 +66,7 @@ void BDDSystem::Toffoli(int ithCircuit, int targ, std::vector<int> cont, std::ve
             term1 = tmp;
 
             // term2
-            term2 = Cudd_Cofactor(_ddManager, _allBDD[ithCircuit][i][j], Cudd_Not(Cudd_bddIthVar(_ddManager, targ)));
+            term2 = Cudd_Cofactor(_ddManager, _allBDD[i][j], Cudd_Not(Cudd_bddIthVar(_ddManager, targ)));
             Cudd_Ref(term2);
 
             tmp = Cudd_Cofactor(_ddManager, term2, g);
@@ -85,9 +85,9 @@ void BDDSystem::Toffoli(int ithCircuit, int targ, std::vector<int> cont, std::ve
             term2 = tmp;
 
             // term3
-            term3 = Cudd_Cofactor(_ddManager, _allBDD[ithCircuit][i][j], Cudd_bddIthVar(_ddManager, targ));
+            term3 = Cudd_Cofactor(_ddManager, _allBDD[i][j], Cudd_bddIthVar(_ddManager, targ));
             Cudd_Ref(term3);
-            Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
+            Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
 
             tmp = Cudd_Cofactor(_ddManager, term3, g);
             Cudd_Ref(tmp);
@@ -105,22 +105,22 @@ void BDDSystem::Toffoli(int ithCircuit, int targ, std::vector<int> cont, std::ve
             term3 = tmp;
 
             // OR
-            _allBDD[ithCircuit][i][j] = Cudd_bddOr(_ddManager, term1, term2);
-            Cudd_Ref(_allBDD[ithCircuit][i][j]);
+            _allBDD[i][j] = Cudd_bddOr(_ddManager, term1, term2);
+            Cudd_Ref(_allBDD[i][j]);
             Cudd_RecursiveDeref(_ddManager, term1);
             Cudd_RecursiveDeref(_ddManager, term2);
-            tmp = Cudd_bddOr(_ddManager, term3, _allBDD[ithCircuit][i][j]);
+            tmp = Cudd_bddOr(_ddManager, term3, _allBDD[i][j]);
             Cudd_Ref(tmp);
             Cudd_RecursiveDeref(_ddManager, term3);
-            Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
-            _allBDD[ithCircuit][i][j] = tmp;
+            Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
+            _allBDD[i][j] = tmp;
         }
     }
     Cudd_RecursiveDeref(_ddManager, g);
     updateNodeCount();
 }
 
-void BDDSystem::Fredkin(int ithCircuit, int swapA , int swapB, std::vector<int> cont)
+void BDDSystem::Fredkin(int swapA , int swapB, std::vector<int> cont)
 {
     assert(cont.size() < _n);
     int IsBadtarg = 0;
@@ -146,14 +146,14 @@ void BDDSystem::Fredkin(int ithCircuit, int swapA , int swapB, std::vector<int> 
         g = tmp;
     }
 
-    for (int i = 0; i < _w; i++) // F = _allBDD[ithCircuit][i][j]
+    for (int i = 0; i < _w; i++) // F = _allBDD[i][j]
     {
         for (int j = 0; j < _r; j++)
         {
             // term1
             term1 = Cudd_ReadOne(_ddManager);
             Cudd_Ref(term1);
-            tmp = Cudd_bddAnd(_ddManager, _allBDD[ithCircuit][i][j], term1);
+            tmp = Cudd_bddAnd(_ddManager, _allBDD[i][j], term1);
             Cudd_Ref(tmp);
             Cudd_RecursiveDeref(_ddManager, term1);
             term1 = tmp;
@@ -169,7 +169,7 @@ void BDDSystem::Fredkin(int ithCircuit, int swapA , int swapB, std::vector<int> 
             term1 = tmp;
 
             // term2
-            term2 = Cudd_Cofactor(_ddManager, _allBDD[ithCircuit][i][j], g);
+            term2 = Cudd_Cofactor(_ddManager, _allBDD[i][j], g);
             Cudd_Ref(term2);
 
             tmp = Cudd_Cofactor(_ddManager, term2, Cudd_Not(Cudd_bddIthVar(_ddManager, swapA)));
@@ -198,7 +198,7 @@ void BDDSystem::Fredkin(int ithCircuit, int swapA , int swapB, std::vector<int> 
             term2 = tmp;
 
             // term3
-            term3 = Cudd_Cofactor(_ddManager, _allBDD[ithCircuit][i][j], g);
+            term3 = Cudd_Cofactor(_ddManager, _allBDD[i][j], g);
             Cudd_Ref(term3);
 
             tmp = Cudd_Cofactor(_ddManager, term3, Cudd_bddIthVar(_ddManager, swapA));
@@ -227,32 +227,32 @@ void BDDSystem::Fredkin(int ithCircuit, int swapA , int swapB, std::vector<int> 
             term3 = tmp;
 
             // OR
-            _allBDD[ithCircuit][i][j] = Cudd_bddOr(_ddManager, term1, term2);
-            Cudd_Ref(_allBDD[ithCircuit][i][j]);
+            _allBDD[i][j] = Cudd_bddOr(_ddManager, term1, term2);
+            Cudd_Ref(_allBDD[i][j]);
             Cudd_RecursiveDeref(_ddManager, term1);
             Cudd_RecursiveDeref(_ddManager, term2);
-            tmp = Cudd_bddOr(_ddManager, term3, _allBDD[ithCircuit][i][j]);
+            tmp = Cudd_bddOr(_ddManager, term3, _allBDD[i][j]);
             Cudd_Ref(tmp);
             Cudd_RecursiveDeref(_ddManager, term3);
-            Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
-            _allBDD[ithCircuit][i][j] = tmp;
+            Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
+            _allBDD[i][j] = tmp;
         }
     }
     Cudd_RecursiveDeref(_ddManager, g);
     updateNodeCount();
 }
 
-void BDDSystem::Hadamard(int ithCircuit, int iqubit)
+void BDDSystem::Hadamard(int iqubit)
 {
     assert((iqubit >= 0) & (iqubit < 2*_n));
 
-    _k[ithCircuit] = _k[ithCircuit] + 1;
+    _k = _k + 1;
 
     DdNode *g, *d, *c, *tmp, *term1, *term2;
 
     int overflow_done = 0;
 
-    for (int i = 0; i < _w; i++) // F = _allBDD[ithCircuit][i][j]
+    for (int i = 0; i < _w; i++) 
     {
         c = Cudd_ReadOne(_ddManager); 
         Cudd_Ref(c);
@@ -263,17 +263,17 @@ void BDDSystem::Hadamard(int ithCircuit, int iqubit)
         for (int j = 0; j < _r; j++)
         {
             // G
-            g = Cudd_Cofactor(_ddManager, _allBDD[ithCircuit][i][j], Cudd_Not(Cudd_bddIthVar(_ddManager, iqubit)));
+            g = Cudd_Cofactor(_ddManager, _allBDD[i][j], Cudd_Not(Cudd_bddIthVar(_ddManager, iqubit)));
             Cudd_Ref(g);
 
             // D
-            term1 = Cudd_Cofactor(_ddManager, _allBDD[ithCircuit][i][j], Cudd_bddIthVar(_ddManager, iqubit));
+            term1 = Cudd_Cofactor(_ddManager, _allBDD[i][j], Cudd_bddIthVar(_ddManager, iqubit));
             Cudd_Ref(term1);
             tmp = Cudd_bddAnd(_ddManager, term1, Cudd_Not(Cudd_bddIthVar(_ddManager, iqubit)));
             Cudd_Ref(tmp);
             Cudd_RecursiveDeref(_ddManager, term1);
             term1 = tmp;
-            term2 = Cudd_Not(_allBDD[ithCircuit][i][j]);
+            term2 = Cudd_Not(_allBDD[i][j]);
             Cudd_Ref(term2);
             tmp = Cudd_bddAnd(_ddManager, term2, Cudd_bddIthVar(_ddManager, iqubit));
             Cudd_Ref(tmp);
@@ -289,19 +289,18 @@ void BDDSystem::Hadamard(int ithCircuit, int iqubit)
                 if (overflow3(g, d, c))
                 {
                     _r += _inc;
-                    for (int indexOfCircuit = 0; indexOfCircuit < _nCircuit; indexOfCircuit++)   // each BDD of each circuit should be extend together
-                        allocBDD(_allBDD[indexOfCircuit], true); // add new BDDs
+                    allocBDD(_allBDD, true); // add new BDDs
                     overflow_done = 1;
                 }
 
             // Sum
-            Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
-            _allBDD[ithCircuit][i][j] = Cudd_bddXor(_ddManager, g, d);
-            Cudd_Ref(_allBDD[ithCircuit][i][j]);
-            tmp = Cudd_bddXor(_ddManager, _allBDD[ithCircuit][i][j], c);
+            Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
+            _allBDD[i][j] = Cudd_bddXor(_ddManager, g, d);
+            Cudd_Ref(_allBDD[i][j]);
+            tmp = Cudd_bddXor(_ddManager, _allBDD[i][j], c);
             Cudd_Ref(tmp);
-            Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
-            _allBDD[ithCircuit][i][j] = tmp;
+            Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
+            _allBDD[i][j] = tmp;
 
             // Carry
             if (j == _r - 1)
@@ -333,11 +332,11 @@ void BDDSystem::Hadamard(int ithCircuit, int iqubit)
     updateNodeCount();
 }
 
-void BDDSystem::rx_pi_2(int ithCircuit, int iqubit, bool dagger)
+void BDDSystem::rx_pi_2(int iqubit, bool dagger)
 {
     assert((iqubit >= 0) & (iqubit < 2*_n));
 
-    _k[ithCircuit] = _k[ithCircuit] + 1;
+    _k = _k + 1;
 
     int nshift = _w / 2;
     int overflow_done = 0;
@@ -354,7 +353,7 @@ void BDDSystem::rx_pi_2(int ithCircuit, int iqubit, bool dagger)
         {
             copy[i][j] = Cudd_ReadOne(_ddManager);
             Cudd_Ref(copy[i][j]);
-            tmp = Cudd_bddAnd(_ddManager, copy[i][j], _allBDD[ithCircuit][i][j]);
+            tmp = Cudd_bddAnd(_ddManager, copy[i][j], _allBDD[i][j]);
             Cudd_Ref(tmp);
             Cudd_RecursiveDeref(_ddManager, copy[i][j]);
             copy[i][j] = tmp;
@@ -394,19 +393,18 @@ void BDDSystem::rx_pi_2(int ithCircuit, int iqubit, bool dagger)
                 if (overflow3(copy[i][j], d, c))
                 {
                     _r += _inc;
-                    for (int indexOfCircuit = 0; indexOfCircuit < _nCircuit; indexOfCircuit++)   // each BDD of each circuit should be extend together
-                        allocBDD(_allBDD[indexOfCircuit], true); // add new BDDs
+                    allocBDD(_allBDD, true); // add new BDDs
                     allocBDD(copy, true);
                     overflow_done = 1;
                 }
             // Sum
-            Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
-            _allBDD[ithCircuit][i][j] = Cudd_bddXor(_ddManager, copy[i][j], d);
-            Cudd_Ref(_allBDD[ithCircuit][i][j]);
-            tmp = Cudd_bddXor(_ddManager, _allBDD[ithCircuit][i][j], c);
+            Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
+            _allBDD[i][j] = Cudd_bddXor(_ddManager, copy[i][j], d);
+            Cudd_Ref(_allBDD[i][j]);
+            tmp = Cudd_bddXor(_ddManager, _allBDD[i][j], c);
             Cudd_Ref(tmp);
-            Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
-            _allBDD[ithCircuit][i][j] = tmp;
+            Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
+            _allBDD[i][j] = tmp;
             // Carry
             if (j == _r - 1)
             {
@@ -441,12 +439,12 @@ void BDDSystem::rx_pi_2(int ithCircuit, int iqubit, bool dagger)
     updateNodeCount();
 }
 
-void BDDSystem::ry_pi_2(int ithCircuit, int iqubit, bool transpose)
+void BDDSystem::ry_pi_2(int iqubit, bool transpose)
 {
 
     assert((iqubit >= 0) & (iqubit < 2*_n));
 
-    _k[ithCircuit] = _k[ithCircuit] + 1;
+    _k = _k + 1;
 
     int overflow_done = 0;
 
@@ -467,12 +465,12 @@ void BDDSystem::ry_pi_2(int ithCircuit, int iqubit, bool transpose)
         for (int j = 0; j < _r; j++)
         {
             // G
-            g = Cudd_Cofactor(_ddManager, _allBDD[ithCircuit][i][j], Cudd_Not(var));
+            g = Cudd_Cofactor(_ddManager, _allBDD[i][j], Cudd_Not(var));
             Cudd_Ref(g);
             // D
-            term1 = Cudd_bddAnd(_ddManager, _allBDD[ithCircuit][i][j], var);
+            term1 = Cudd_bddAnd(_ddManager, _allBDD[i][j], var);
             Cudd_Ref(term1);
-            term2 = Cudd_Not(Cudd_Cofactor(_ddManager, _allBDD[ithCircuit][i][j], var));
+            term2 = Cudd_Not(Cudd_Cofactor(_ddManager, _allBDD[i][j], var));
             Cudd_Ref(term2);
             tmp = Cudd_bddAnd(_ddManager, term2, Cudd_Not(var));
             Cudd_Ref(tmp);
@@ -488,18 +486,17 @@ void BDDSystem::ry_pi_2(int ithCircuit, int iqubit, bool transpose)
                 if (overflow3(g, d, c))
                 {
                     _r += _inc;
-                    for (int indexOfCircuit = 0; indexOfCircuit < _nCircuit; indexOfCircuit++)   // each BDD of each circuit should be extend together
-                        allocBDD(_allBDD[indexOfCircuit], true); // add new BDDs
+                    allocBDD(_allBDD, true); // add new BDDs
                     overflow_done = 1;
                 }
             // Sum
-            Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
-            _allBDD[ithCircuit][i][j] = Cudd_bddXor(_ddManager, g, d);
-            Cudd_Ref(_allBDD[ithCircuit][i][j]);
-            tmp = Cudd_bddXor(_ddManager, _allBDD[ithCircuit][i][j], c);
+            Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
+            _allBDD[i][j] = Cudd_bddXor(_ddManager, g, d);
+            Cudd_Ref(_allBDD[i][j]);
+            tmp = Cudd_bddXor(_ddManager, _allBDD[i][j], c);
             Cudd_Ref(tmp);
-            Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
-            _allBDD[ithCircuit][i][j] = tmp;
+            Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
+            _allBDD[i][j] = tmp;
             // Carry
             if (j == _r - 1)
             {
@@ -530,7 +527,7 @@ void BDDSystem::ry_pi_2(int ithCircuit, int iqubit, bool transpose)
     updateNodeCount();
 }
 
-void BDDSystem::Phase_shift(int ithCircuit, int phase, int iqubit)
+void BDDSystem::Phase_shift(int phase, int iqubit)
 {
     assert((iqubit >= 0) & (iqubit < 2*_n));
 
@@ -549,7 +546,7 @@ void BDDSystem::Phase_shift(int ithCircuit, int phase, int iqubit)
         {
             copy[i][j] = Cudd_ReadOne(_ddManager);
             Cudd_Ref(copy[i][j]);
-            tmp = Cudd_bddAnd(_ddManager, copy[i][j], _allBDD[ithCircuit][i][j]);
+            tmp = Cudd_bddAnd(_ddManager, copy[i][j], _allBDD[i][j]);
             Cudd_Ref(tmp);
             Cudd_RecursiveDeref(_ddManager, copy[i][j]);
             copy[i][j] = tmp;
@@ -583,21 +580,20 @@ void BDDSystem::Phase_shift(int ithCircuit, int phase, int iqubit)
                     if (overflow2(g, c))
                     {
                         _r += _inc;
-                        for (int indexOfCircuit = 0; indexOfCircuit < _nCircuit; indexOfCircuit++)   // each BDD of each circuit should be extend together
-                            allocBDD(_allBDD[indexOfCircuit], true); // add new BDDs
+                        allocBDD(_allBDD, true); // add new BDDs
                         allocBDD(copy, true);      // add new BDDs
                         overflow_done = 1;
                     }
 
                 // Plus
-                Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
+                Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
                 if (Cudd_IsConstant(c))     // must be constant 0
-                    _allBDD[ithCircuit][i][j] = g;
+                    _allBDD[i][j] = g;
                 else
                 {
                     // Sum
-                    _allBDD[ithCircuit][i][j] = Cudd_bddXor(_ddManager, g, c);
-                    Cudd_Ref(_allBDD[ithCircuit][i][j]);
+                    _allBDD[i][j] = Cudd_bddXor(_ddManager, g, c);
+                    Cudd_Ref(_allBDD[i][j]);
                     // Carry
                     if (j == _r - 1)
                     {
@@ -621,9 +617,9 @@ void BDDSystem::Phase_shift(int ithCircuit, int phase, int iqubit)
                 term2 = Cudd_bddAnd(_ddManager, copy[i + nshift][j], Cudd_bddIthVar(_ddManager, iqubit));
                 Cudd_Ref(term2);
 
-                Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
-                _allBDD[ithCircuit][i][j] = Cudd_bddOr(_ddManager, term1, term2);
-                Cudd_Ref(_allBDD[ithCircuit][i][j]);
+                Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
+                _allBDD[i][j] = Cudd_bddOr(_ddManager, term1, term2);
+                Cudd_Ref(_allBDD[i][j]);
 
                 Cudd_RecursiveDeref(_ddManager, term1);
                 Cudd_RecursiveDeref(_ddManager, term2);
@@ -640,7 +636,7 @@ void BDDSystem::Phase_shift(int ithCircuit, int phase, int iqubit)
     updateNodeCount();
 }
 
-void BDDSystem::Phase_shift_dagger(int ithCircuit, int phase, int iqubit)
+void BDDSystem::Phase_shift_dagger(int phase, int iqubit)
 {
     assert((iqubit >= 0) & (iqubit < 2*_n));
 
@@ -659,7 +655,7 @@ void BDDSystem::Phase_shift_dagger(int ithCircuit, int phase, int iqubit)
         {
             copy[i][j] = Cudd_ReadOne(_ddManager);
             Cudd_Ref(copy[i][j]);
-            tmp = Cudd_bddAnd(_ddManager, copy[i][j], _allBDD[ithCircuit][i][j]);
+            tmp = Cudd_bddAnd(_ddManager, copy[i][j], _allBDD[i][j]);
             Cudd_Ref(tmp);
             Cudd_RecursiveDeref(_ddManager, copy[i][j]);
             copy[i][j] = tmp;
@@ -693,21 +689,20 @@ void BDDSystem::Phase_shift_dagger(int ithCircuit, int phase, int iqubit)
                     if (overflow2(g, c))
                     {
                         _r += _inc;
-                        for (int indexOfCircuit = 0; indexOfCircuit < _nCircuit; indexOfCircuit++)   // each BDD of each circuit should be extend together
-                            allocBDD(_allBDD[indexOfCircuit], true); // add new BDDs
+                        allocBDD(_allBDD, true); // add new BDDs
                         allocBDD(copy, true);      // add new BDD
                         overflow_done = 1;
                     }
 
                 // Plus
-                Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
+                Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
                 if (Cudd_IsConstant(c))     // must be constant 0
-                    _allBDD[ithCircuit][i][j] = g;
+                    _allBDD[i][j] = g;
                 else
                 {
                     // Sum
-                    _allBDD[ithCircuit][i][j] = Cudd_bddXor(_ddManager, g, c);
-                    Cudd_Ref(_allBDD[ithCircuit][i][j]);
+                    _allBDD[i][j] = Cudd_bddXor(_ddManager, g, c);
+                    Cudd_Ref(_allBDD[i][j]);
                     // Carry
                     if (j == _r - 1)
                     {
@@ -731,9 +726,9 @@ void BDDSystem::Phase_shift_dagger(int ithCircuit, int phase, int iqubit)
                 term2 = Cudd_bddAnd(_ddManager, copy[i - nshift][j], Cudd_bddIthVar(_ddManager, iqubit));
                 Cudd_Ref(term2);
 
-                Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
-                _allBDD[ithCircuit][i][j] = Cudd_bddOr(_ddManager, term1, term2);
-                Cudd_Ref(_allBDD[ithCircuit][i][j]);
+                Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
+                _allBDD[i][j] = Cudd_bddOr(_ddManager, term1, term2);
+                Cudd_Ref(_allBDD[i][j]);
 
                 Cudd_RecursiveDeref(_ddManager, term1);
                 Cudd_RecursiveDeref(_ddManager, term2);
@@ -750,18 +745,18 @@ void BDDSystem::Phase_shift_dagger(int ithCircuit, int phase, int iqubit)
     updateNodeCount();
 }
 
-void BDDSystem::PauliX(int ithCircuit, int iqubit)
+void BDDSystem::PauliX(int iqubit)
 {
     assert((iqubit >= 0) & (iqubit < 2*_n));
 
     DdNode *tmp, *term1, *term2;
 
-    for (int i = 0; i < _w; i++) // F = _allBDD[ithCircuit][i][j]
+    for (int i = 0; i < _w; i++) // F = _allBDD[i][j]
     {
         for (int j = 0; j < _r; j++)
         {
             // term1
-            term1 = Cudd_Cofactor(_ddManager, _allBDD[ithCircuit][i][j], Cudd_Not(Cudd_bddIthVar(_ddManager, iqubit)));
+            term1 = Cudd_Cofactor(_ddManager, _allBDD[i][j], Cudd_Not(Cudd_bddIthVar(_ddManager, iqubit)));
             Cudd_Ref(term1);
 
             tmp = Cudd_bddAnd(_ddManager, term1, Cudd_bddIthVar(_ddManager, iqubit));
@@ -770,9 +765,9 @@ void BDDSystem::PauliX(int ithCircuit, int iqubit)
             term1 = tmp;
 
             // term2
-            term2 = Cudd_Cofactor(_ddManager, _allBDD[ithCircuit][i][j], Cudd_bddIthVar(_ddManager, iqubit));
+            term2 = Cudd_Cofactor(_ddManager, _allBDD[i][j], Cudd_bddIthVar(_ddManager, iqubit));
             Cudd_Ref(term2);
-            Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
+            Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
 
             tmp = Cudd_bddAnd(_ddManager, term2, Cudd_Not(Cudd_bddIthVar(_ddManager, iqubit)));
             Cudd_Ref(tmp);
@@ -780,8 +775,8 @@ void BDDSystem::PauliX(int ithCircuit, int iqubit)
             term2 = tmp;
 
             // OR
-            _allBDD[ithCircuit][i][j] = Cudd_bddOr(_ddManager, term1, term2);
-            Cudd_Ref(_allBDD[ithCircuit][i][j]);
+            _allBDD[i][j] = Cudd_bddOr(_ddManager, term1, term2);
+            Cudd_Ref(_allBDD[i][j]);
             Cudd_RecursiveDeref(_ddManager, term1);
             Cudd_RecursiveDeref(_ddManager, term2);
         }
@@ -789,7 +784,7 @@ void BDDSystem::PauliX(int ithCircuit, int iqubit)
     updateNodeCount();
 }
 
-void BDDSystem::PauliY(int ithCircuit, int iqubit, bool transpose)
+void BDDSystem::PauliY(int iqubit, bool transpose)
 {
     assert((iqubit >= 0) & (iqubit < 2*_n));
 
@@ -802,12 +797,12 @@ void BDDSystem::PauliY(int ithCircuit, int iqubit, bool transpose)
     else var = Cudd_bddIthVar(_ddManager, iqubit);
 
     // PauliX(iqubit);
-    for (int i = 0; i < _w; i++) // F = _allBDD[ithCircuit][i][j]
+    for (int i = 0; i < _w; i++) // F = _allBDD[i][j]
     {
         for (int j = 0; j < _r; j++)
         {
             // term1
-            term1 = Cudd_Cofactor(_ddManager, _allBDD[ithCircuit][i][j], Cudd_Not(var));
+            term1 = Cudd_Cofactor(_ddManager, _allBDD[i][j], Cudd_Not(var));
             Cudd_Ref(term1);
 
             tmp = Cudd_bddAnd(_ddManager, term1, var);
@@ -816,9 +811,9 @@ void BDDSystem::PauliY(int ithCircuit, int iqubit, bool transpose)
             term1 = tmp;
 
             // term2
-            term2 = Cudd_Cofactor(_ddManager, _allBDD[ithCircuit][i][j], var);
+            term2 = Cudd_Cofactor(_ddManager, _allBDD[i][j], var);
             Cudd_Ref(term2);
-            Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
+            Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
 
             tmp = Cudd_bddAnd(_ddManager, term2, Cudd_Not(var));
             Cudd_Ref(tmp);
@@ -826,8 +821,8 @@ void BDDSystem::PauliY(int ithCircuit, int iqubit, bool transpose)
             term2 = tmp;
 
             // OR
-            _allBDD[ithCircuit][i][j] = Cudd_bddOr(_ddManager, term1, term2);
-            Cudd_Ref(_allBDD[ithCircuit][i][j]);
+            _allBDD[i][j] = Cudd_bddOr(_ddManager, term1, term2);
+            Cudd_Ref(_allBDD[i][j]);
             Cudd_RecursiveDeref(_ddManager, term1);
             Cudd_RecursiveDeref(_ddManager, term2);
         }
@@ -843,7 +838,7 @@ void BDDSystem::PauliY(int ithCircuit, int iqubit, bool transpose)
         {
             copy[i][j] = Cudd_ReadOne(_ddManager);
             Cudd_Ref(copy[i][j]);
-            tmp = Cudd_bddAnd(_ddManager, copy[i][j], _allBDD[ithCircuit][i][j]);
+            tmp = Cudd_bddAnd(_ddManager, copy[i][j], _allBDD[i][j]);
             Cudd_Ref(tmp);
             Cudd_RecursiveDeref(_ddManager, copy[i][j]);
             copy[i][j] = tmp;
@@ -885,21 +880,20 @@ void BDDSystem::PauliY(int ithCircuit, int iqubit, bool transpose)
                 if (overflow2(g, c))
                 {
                     _r += _inc;
-                    for (int indexOfCircuit = 0; indexOfCircuit < _nCircuit; indexOfCircuit++)   // each BDD of each circuit should be extend together
-                        allocBDD(_allBDD[indexOfCircuit], true); // add new BDDs
+                    allocBDD(_allBDD, true); // add new BDDs
                     allocBDD(copy, true);
                     overflow_done = 1;
                 }
 
             // Plus 1
-            Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
+            Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
             if (Cudd_IsConstant(c))
-                _allBDD[ithCircuit][i][j] = g;
+                _allBDD[i][j] = g;
             else
             {
                 // Sum
-                _allBDD[ithCircuit][i][j] = Cudd_bddXor(_ddManager, g, c);
-                Cudd_Ref(_allBDD[ithCircuit][i][j]);
+                _allBDD[i][j] = Cudd_bddXor(_ddManager, g, c);
+                Cudd_Ref(_allBDD[i][j]);
                 // Carry
                 if (j == _r - 1)
                 {
@@ -927,7 +921,7 @@ void BDDSystem::PauliY(int ithCircuit, int iqubit, bool transpose)
     updateNodeCount();
 }
 
-void BDDSystem::PauliZ(int ithCircuit, std::vector<int> iqubit)
+void BDDSystem::PauliZ(std::vector<int> iqubit)
 {
     for (int i = 0; i < iqubit.size(); i++)
     {
@@ -959,11 +953,11 @@ void BDDSystem::PauliZ(int ithCircuit, std::vector<int> iqubit)
         c = tmp;
         for (int j = 0; j < _r; j++)
         {
-            term1 = Cudd_bddAnd(_ddManager, _allBDD[ithCircuit][i][j], Cudd_Not(qubit_and));
+            term1 = Cudd_bddAnd(_ddManager, _allBDD[i][j], Cudd_Not(qubit_and));
             Cudd_Ref(term1);
-            term2 = Cudd_Not(_allBDD[ithCircuit][i][j]);
+            term2 = Cudd_Not(_allBDD[i][j]);
             Cudd_Ref(term2);
-            Cudd_RecursiveDeref(_ddManager, _allBDD[ithCircuit][i][j]);
+            Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
             tmp = Cudd_bddAnd(_ddManager, term2, qubit_and);
             Cudd_Ref(tmp);
             Cudd_RecursiveDeref(_ddManager, term2);
@@ -975,7 +969,7 @@ void BDDSystem::PauliZ(int ithCircuit, std::vector<int> iqubit)
 
             // Plus 1
             if (Cudd_IsConstant(c))
-                _allBDD[ithCircuit][i][j] = inter;
+                _allBDD[i][j] = inter;
             else
             {
                 // Detect overflow
@@ -983,14 +977,13 @@ void BDDSystem::PauliZ(int ithCircuit, std::vector<int> iqubit)
                     if (overflow2(inter, c))
                     {
                         _r += _inc;
-                        for (int indexOfCircuit = 0; indexOfCircuit < _nCircuit; indexOfCircuit++)   // each BDD of each circuit should be extend together
-                            allocBDD(_allBDD[indexOfCircuit], true); // add new BDDs
+                        allocBDD(_allBDD, true); // add new BDDs
                         overflow_done = 1;
                     }
 
                 // Sum
-                _allBDD[ithCircuit][i][j] = Cudd_bddXor(_ddManager, inter, c);
-                Cudd_Ref(_allBDD[ithCircuit][i][j]);
+                _allBDD[i][j] = Cudd_bddXor(_ddManager, inter, c);
+                Cudd_Ref(_allBDD[i][j]);
                 // Carry
                 if (i == _r - 1)
                     Cudd_RecursiveDeref(_ddManager, inter);

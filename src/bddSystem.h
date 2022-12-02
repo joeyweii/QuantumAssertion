@@ -30,20 +30,20 @@ public:
     }
 
     /* gateOpe.cpp */
-    void Toffoli(int ithCircuit, int targ, std::vector<int> cont, std::vector<int> ncont);
-    void Fredkin(int ithCircuit, int swapA , int swapB, std::vector<int> cont);
-    void Hadamard(int ithCircuit, int iqubit);
-    void rx_pi_2(int ithCircuit, int iqubit, bool dagger);
-    void ry_pi_2(int ithCircuit, int iqubit, bool tanspose);
-    void Phase_shift(int ithCircuit, int phase, int iqubit); // phase can only be 2 to the power of an integer
-    void Phase_shift_dagger(int ithCircuit, int phase, int iqubit);
-    void PauliX(int ithCircuit, int iqubit);
-    void PauliY(int ithCircuit, int iqubit, bool transpose);
-    void PauliZ(int ithCircuit, std::vector<int> iqubit); // Z or CZ
+    void Toffoli(int targ, std::vector<int> cont, std::vector<int> ncont);
+    void Fredkin(int swapA , int swapB, std::vector<int> cont);
+    void Hadamard(int iqubit);
+    void rx_pi_2(int iqubit, bool dagger);
+    void ry_pi_2(int iqubit, bool tanspose);
+    void Phase_shift(int phase, int iqubit); // phase can only be 2 to the power of an integer
+    void Phase_shift_dagger(int phase, int iqubit);
+    void PauliX(int iqubit);
+    void PauliY(int iqubit, bool transpose);
+    void PauliZ(std::vector<int> iqubit); // Z or CZ
 
 private:
     DdManager *_ddManager;      // BDD manager.
-    DdNode ****_allBDD;         // BDDs. [nCircuits][w=4][r]
+    DdNode ***_allBDD;         // BDDs. [w=4][r]
     DdNode *_zeroNode;          // pointer to the zero node in BDD.
     DdNode *_identityNode;      // pointer to the root node of the identity BDD.
     int* _k;                    // k in algebraic representation.
@@ -66,20 +66,12 @@ private:
     // Clean up BDD system
     void clear() 
     {
-        for (int i = 0; i < _nCircuit; i++)
-            for (int j = 0; j < _w; j++)
-                for (int k = 0; k < _r; k++)
-                    Cudd_RecursiveDeref(_ddManager, _allBDD[i][j][k]);
+        for (int i = 0; i < _w; i++)
+            for (int j = 0; j < _r; j++)
+                Cudd_RecursiveDeref(_ddManager, _allBDD[i][j]);
 
-        for (int i = 0; i < _nCircuit; i++)
-        {
-            for (int j = 0; j < _w; j++)
-            {
-                delete[] _allBDD[i][j];
-            }
-            delete[] _allBDD[i];
-        }
-        delete[] _allBDD;
+		for (int i = 0; i < _w; i++)
+			delete[] _allBDD[i];
 
         Cudd_Quit(_ddManager);
     };
