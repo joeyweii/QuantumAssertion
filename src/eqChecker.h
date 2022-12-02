@@ -26,8 +26,6 @@ public:
 private:
     std::vector<std::vector<GateType>> _gates;              // gates in circuits. [nCircuit]*[#gate]
     std::vector<std::vector<std::vector<int>>> _qubits;     // ith qubits of gates in circuits. [nCircuit]*[#gates]*[#qubits]
-    int _nQd;                                               // #data qubits. (d in the paper)
-    int _nQm;                                               // #measured qubits. (m in the paper)     
     int _ratio;                                             // gate count ratio. |circuit2|/|circuit1|
     bool _isEq;                                             // if the result is equivalent or not.
     bool _isGatesSwap;                                      // if circuit1 and circuit2 are swapped.
@@ -38,8 +36,6 @@ private:
     void calculateMiter();
     void extract(int ithCircuit);
     void checkFeq();
-    void checkPeq();
-    void checkPeqS();
     void printResult() const;
 
     // Clean up EquivalenceChecker
