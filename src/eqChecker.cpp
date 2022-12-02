@@ -51,7 +51,7 @@ void EquivalenceChecker::check()
 void EquivalenceChecker::init()
 {
     ddInitialize();
-    initIdentity();
+    initState();
 }
 
 /**Function*************************************************************
@@ -157,11 +157,12 @@ void EquivalenceChecker::calculateMiter()
   SeeAlso     []
 
 ***********************************************************************/
-void EquivalenceChecker::printResult() const
+void EquivalenceChecker::printResult()
 {
     std::cout << "{\n";
     std::cout << "\t#Qubits (n): " << _n << '\n';
     std::cout << "\tGatecount of circuit: " << _gates.size() << '\n';
+	std::cout << "\tSparsity: " << calSparsity() << std::endl;
     std::cout << "}\n";
 }
 
@@ -181,4 +182,38 @@ void EquivalenceChecker::printInfo(double runtime, size_t memPeak) const
     std::cout << '\n';
     std::cout << "Runtime: " << runtime << " seconds\n";
     std::cout << "Peak memory usage: " << memPeak << " bytes\n"; 
+}
+
+
+/**Function*************************************************************
+
+  Synopsis    [Calculate the sparsity of a state vector.]
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
+double EquivalenceChecker::calSparsity()
+{
+    DdNode* ddS;
+    ddS = Cudd_ReadLogicZero(_ddManager);
+    Cudd_Ref(ddS);
+
+    for (int i = 0; i < _w; i++)
+    {
+        for (int j = 0; j < _r; j++)
+        {
+            DdNode* tem = ddS;
+            ddS = Cudd_bddOr(_ddManager, ddS, _allBDD[i][j]);
+            Cudd_Ref(ddS);
+            Cudd_RecursiveDeref(_ddManager, tem);
+        }
+    }
+
+    double sparsity = 1 - Cudd_CountMinterm(_ddManager, ddS, _n)/pow(2, _n); 
+    return sparsity;
 }

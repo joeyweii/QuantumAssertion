@@ -19,9 +19,10 @@ void BDDSystem::ddInitialize()
     Cudd_Ref(_zeroNode);
 }
 
+
 /**Function*************************************************************
 
-  Synopsis    [Initialize an identity matrix represented by BDDs.]
+  Synopsis    [Initialize a basic state vector.]
 
   Description []
 
@@ -30,62 +31,51 @@ void BDDSystem::ddInitialize()
   SeeAlso     []
 
 ***********************************************************************/
-void BDDSystem::initIdentity()
+
+void BDDSystem::initState()
 {
-        DdNode *tmp, *tmp1, *tmp2;
-        _allBDD = new DdNode **[_w];
-        for (int i = 0; i < _w; i++)
-            _allBDD[i] = new DdNode *[_r];
+	int *basicState = new int[_n];
+    for (int i = 0; i < _n; i++)
+        basicState[i] = 0;
 
-        // reorder into a better order for identity
-        int * permut = new int[2*_n];
-        for (int i = 0; i < _n; i++)
+	DdNode *var, *tmp;
+    _allBDD = new DdNode **[_w];
+    for (int i = 0; i < _w; i++)
+        _allBDD[i] = new DdNode *[_r];
+
+    for (int i = 0; i < _r; i++)
+    {
+        if (i == 0)
         {
-            permut[2*i] = i;
-            permut[2*i+1] = i + _n;
-        }
-        Cudd_ShuffleHeap(_ddManager, permut);
-        delete [] permut;
-
-        for (int i = 0; i < _r; i++)
-        {
-            if (i == 0)
+            for (int j = 0; j < _w - 1; j++)
             {
-                for (int j = 0; j < _w - 1; j++)
-                {
-                    _allBDD[j][i] = Cudd_Not(Cudd_ReadOne(_ddManager));
-                    Cudd_Ref(_allBDD[j][i]);
-                }
-                _allBDD[_w - 1][i] = Cudd_ReadOne(_ddManager);
-                Cudd_Ref(_allBDD[_w - 1][i]);
-                for (int j = _n - 1; j >= 0; j--)
-                {
-                    tmp1 = Cudd_bddAnd(_ddManager, Cudd_Not(Cudd_bddIthVar(_ddManager, j)), Cudd_Not(Cudd_bddIthVar(_ddManager, j+_n)));
-                    Cudd_Ref(tmp1);
-                    tmp2 = Cudd_bddAnd(_ddManager, Cudd_bddIthVar(_ddManager, j), Cudd_bddIthVar(_ddManager, j+_n));
-                    Cudd_Ref(tmp2);
-                    tmp = Cudd_bddOr(_ddManager, tmp1, tmp2);
-                    Cudd_Ref(tmp);
-                    Cudd_RecursiveDeref(_ddManager, tmp1);
-                    Cudd_RecursiveDeref(_ddManager, tmp2);
-                    tmp1 = Cudd_bddAnd(_ddManager, _allBDD[_w - 1][i], tmp);
-                    Cudd_Ref(tmp1);
-                    Cudd_RecursiveDeref(_ddManager, _allBDD[_w - 1][i]);
-                    _allBDD[_w - 1][i] = tmp1;
-                }
-
-                _identityNode = _allBDD[_w - 1][i];
-                Cudd_Ref(_identityNode);
-             }
-            else
+                _allBDD[j][i] = Cudd_Not(Cudd_ReadOne(_ddManager));
+                Cudd_Ref(_allBDD[j][i]);
+            }
+            _allBDD[_w - 1][i] = Cudd_ReadOne(_ddManager);
+            Cudd_Ref(_allBDD[_w - 1][i]);
+            for (int j = _n - 1; j >= 0; j--)
             {
-                for (int j = 0; j < _w; j++)
-                {
-                    _allBDD[j][i] = Cudd_Not(Cudd_ReadOne(_ddManager));
-                    Cudd_Ref(_allBDD[j][i]);
-                }
+                var = Cudd_bddIthVar(_ddManager, j);
+                if (basicState[j] == 0)
+                    tmp = Cudd_bddAnd(_ddManager, Cudd_Not(var), _allBDD[_w - 1][i]);
+                else
+                    tmp = Cudd_bddAnd(_ddManager, var, _allBDD[_w - 1][i]);
+                Cudd_Ref(tmp);
+                Cudd_RecursiveDeref(_ddManager, _allBDD[_w - 1][i]);
+                _allBDD[_w - 1][i] = tmp;
             }
         }
+        else
+        {
+            for (int j = 0; j < _w; j++)
+            {
+                _allBDD[j][i] = Cudd_Not(Cudd_ReadOne(_ddManager));
+                Cudd_Ref(_allBDD[j][i]);
+            }
+        }
+    }
+
 }
 
 /**Function*************************************************************

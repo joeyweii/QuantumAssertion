@@ -30,7 +30,9 @@ private:
     void init();
     void applyGate(GateType type, std::vector<int> qubit, bool right);
     void calculateMiter();
-    void printResult() const;
+    void printResult();
+	double calSparsity();
+
 
     // Clean up EquivalenceChecker
     void clear() 

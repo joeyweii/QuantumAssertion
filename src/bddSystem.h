@@ -46,7 +46,7 @@ private:
     DdNode ***_allBDD;         // BDDs. [w=4][r]
     DdNode *_zeroNode;          // pointer to the zero node in BDD.
     DdNode *_identityNode;      // pointer to the root node of the identity BDD.
-    int* _k;                    // k in algebraic representation.
+    int _k;                    // k in algebraic representation.
     int _n;                     // # of qubits.
     int _r;                     // resolution of integers.
     int _w;                     // # of integers = 4.
@@ -56,7 +56,7 @@ private:
 
     /* misc.cpp */
     void ddInitialize();
-    void initIdentity();
+    void initState();
     void allocBDD(DdNode ***Bdd, bool extend);
     int overflow3(DdNode *g, DdNode *h, DdNode *crin) const;
     int overflow2(DdNode *g, DdNode *crin) const;
