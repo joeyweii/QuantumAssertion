@@ -8,7 +8,8 @@ EquivalenceChecker::EquivalenceChecker
     int n,
     bool isReorder
 )
-:   BDDSystem
+:   
+	BDDSystem
     ( 
         isReorder
     )
@@ -16,6 +17,9 @@ EquivalenceChecker::EquivalenceChecker
     _gates = gates;
     _qubits = qubits;
     _n = n;
+	_stateVector = new QuantumData();
+	_stateVector->_allBDD = nullptr;
+	_stateVector->_k = 0;
 }
 
 /**Function*************************************************************
@@ -51,7 +55,66 @@ void EquivalenceChecker::check()
 void EquivalenceChecker::init()
 {
     ddInitialize();
-    initState();
+    initState(_stateVector);
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Initialize a basic state vector.]
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
+void EquivalenceChecker::initState(QuantumData* quanData)
+{
+	auto &allBDD = quanData->_allBDD;
+
+	int *basicState = new int[_n];
+    for (int i = 0; i < _n; i++)
+        basicState[i] = 0;
+
+	DdNode *var, *tmp;
+    allBDD = new DdNode **[_w];
+    for (int i = 0; i < _w; i++)
+        allBDD[i] = new DdNode *[_r];
+
+    for (int i = 0; i < _r; i++)
+    {
+        if (i == 0)
+        {
+            for (int j = 0; j < _w - 1; j++)
+            {
+                allBDD[j][i] = Cudd_Not(Cudd_ReadOne(_ddManager));
+                Cudd_Ref(allBDD[j][i]);
+            }
+            allBDD[_w - 1][i] = Cudd_ReadOne(_ddManager);
+            Cudd_Ref(allBDD[_w - 1][i]);
+            for (int j = _n - 1; j >= 0; j--)
+            {
+                var = Cudd_bddIthVar(_ddManager, j);
+                if (basicState[j] == 0)
+                    tmp = Cudd_bddAnd(_ddManager, Cudd_Not(var), allBDD[_w - 1][i]);
+                else
+                    tmp = Cudd_bddAnd(_ddManager, var, allBDD[_w - 1][i]);
+                Cudd_Ref(tmp);
+                Cudd_RecursiveDeref(_ddManager, allBDD[_w - 1][i]);
+                allBDD[_w - 1][i] = tmp;
+            }
+        }
+        else
+        {
+            for (int j = 0; j < _w; j++)
+            {
+                allBDD[j][i] = Cudd_Not(Cudd_ReadOne(_ddManager));
+                Cudd_Ref(allBDD[j][i]);
+            }
+        }
+    }
 }
 
 /**Function*************************************************************
@@ -69,31 +132,31 @@ void EquivalenceChecker::applyGate(GateType type, std::vector<int> qubit, bool r
 {
     if (right) for (int i = 0; i < qubit.size(); i++) qubit[i] += _n;
 
-    if (type == GateType::X) PauliX(qubit[0]);
-    else if (type == GateType::Y) PauliY(qubit[0], right);
-    else if (type == GateType::Z) PauliZ(qubit);
-    else if (type == GateType::H) Hadamard(qubit[0]);
-    else if (type == GateType::S) Phase_shift(2, qubit[0]);
-    else if (type == GateType::SDG) Phase_shift_dagger(-2, qubit[0]);
-    else if (type == GateType::T) Phase_shift(4, qubit[0]);
-    else if (type == GateType::TDG) Phase_shift_dagger(-4, qubit[0]);
-    else if (type == GateType::RX_PI_2) rx_pi_2(qubit[0], false);
-    else if (type == GateType::RX_PI_2_DG) rx_pi_2(qubit[0], true);
-    else if (type == GateType::RY_PI_2) ry_pi_2(qubit[0], right^false);
-    else if (type == GateType::RY_PI_2_DG) ry_pi_2(qubit[0], right^true);
+    if (type == GateType::X) PauliX(_stateVector, qubit[0]);
+    else if (type == GateType::Y) PauliY(_stateVector, qubit[0], right);
+    else if (type == GateType::Z) PauliZ(_stateVector, qubit);
+    else if (type == GateType::H) Hadamard(_stateVector, qubit[0]);
+    else if (type == GateType::S) Phase_shift(_stateVector, 2, qubit[0]);
+    else if (type == GateType::SDG) Phase_shift_dagger(_stateVector, -2, qubit[0]);
+    else if (type == GateType::T) Phase_shift(_stateVector, 4, qubit[0]);
+    else if (type == GateType::TDG) Phase_shift_dagger(_stateVector, -4, qubit[0]);
+    else if (type == GateType::RX_PI_2) rx_pi_2(_stateVector, qubit[0], false);
+    else if (type == GateType::RX_PI_2_DG) rx_pi_2(_stateVector, qubit[0], true);
+    else if (type == GateType::RY_PI_2) ry_pi_2(_stateVector, qubit[0], right^false);
+    else if (type == GateType::RY_PI_2_DG) ry_pi_2(_stateVector, qubit[0], right^true);
     else if (type == GateType::CX)
     {
         std::vector<int> ncont(0);
         int targ = qubit[1];
         qubit.pop_back();
-        Toffoli(targ, qubit, ncont);
+        Toffoli(_stateVector, targ, qubit, ncont);
         ncont.clear();
     }
-    else if (type == GateType::CZ) PauliZ(qubit);
+    else if (type == GateType::CZ) PauliZ(_stateVector, qubit);
     else if (type == GateType::SWAP)
     {
         std::vector<int> cont(0);
-        Fredkin(qubit[0], qubit[1], cont);
+        Fredkin(_stateVector, qubit[0], qubit[1], cont);
         cont.clear();
     }
     else if (type == GateType::CSWAP)
@@ -101,14 +164,14 @@ void EquivalenceChecker::applyGate(GateType type, std::vector<int> qubit, bool r
         int swapA = qubit[1], swapB = qubit[2];
         qubit.pop_back();
         qubit.pop_back();
-        Fredkin(swapA, swapB, qubit);
+        Fredkin(_stateVector, swapA, swapB, qubit);
     }
     else if (type == GateType::CCX)
     {
         std::vector<int> ncont(0);
         int targ = qubit.back();
         qubit.pop_back();
-        Toffoli(targ, qubit, ncont);
+        Toffoli(_stateVector, targ, qubit, ncont);
         ncont.clear();
     }
 
@@ -162,7 +225,8 @@ void EquivalenceChecker::printResult()
     std::cout << "{\n";
     std::cout << "\t#Qubits (n): " << _n << '\n';
     std::cout << "\tGatecount of circuit: " << _gates.size() << '\n';
-	std::cout << "\tSparsity: " << calSparsity() << std::endl;
+	std::cout << "\tr: " << _r << '\n';		
+	std::cout << "\tSparsity: " << calSparsity(_stateVector) << std::endl;
     std::cout << "}\n";
 }
 
@@ -197,7 +261,7 @@ void EquivalenceChecker::printInfo(double runtime, size_t memPeak) const
 
 ***********************************************************************/
 
-double EquivalenceChecker::calSparsity()
+double EquivalenceChecker::calSparsity(QuantumData *quanData)
 {
     DdNode* ddS;
     ddS = Cudd_ReadLogicZero(_ddManager);
@@ -208,7 +272,7 @@ double EquivalenceChecker::calSparsity()
         for (int j = 0; j < _r; j++)
         {
             DdNode* tem = ddS;
-            ddS = Cudd_bddOr(_ddManager, ddS, _allBDD[i][j]);
+            ddS = Cudd_bddOr(_ddManager, ddS, quanData->_allBDD[i][j]);
             Cudd_Ref(ddS);
             Cudd_RecursiveDeref(_ddManager, tem);
         }

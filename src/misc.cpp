@@ -19,65 +19,6 @@ void BDDSystem::ddInitialize()
     Cudd_Ref(_zeroNode);
 }
 
-
-/**Function*************************************************************
-
-  Synopsis    [Initialize a basic state vector.]
-
-  Description []
-
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-
-void BDDSystem::initState()
-{
-	int *basicState = new int[_n];
-    for (int i = 0; i < _n; i++)
-        basicState[i] = 0;
-
-	DdNode *var, *tmp;
-    _allBDD = new DdNode **[_w];
-    for (int i = 0; i < _w; i++)
-        _allBDD[i] = new DdNode *[_r];
-
-    for (int i = 0; i < _r; i++)
-    {
-        if (i == 0)
-        {
-            for (int j = 0; j < _w - 1; j++)
-            {
-                _allBDD[j][i] = Cudd_Not(Cudd_ReadOne(_ddManager));
-                Cudd_Ref(_allBDD[j][i]);
-            }
-            _allBDD[_w - 1][i] = Cudd_ReadOne(_ddManager);
-            Cudd_Ref(_allBDD[_w - 1][i]);
-            for (int j = _n - 1; j >= 0; j--)
-            {
-                var = Cudd_bddIthVar(_ddManager, j);
-                if (basicState[j] == 0)
-                    tmp = Cudd_bddAnd(_ddManager, Cudd_Not(var), _allBDD[_w - 1][i]);
-                else
-                    tmp = Cudd_bddAnd(_ddManager, var, _allBDD[_w - 1][i]);
-                Cudd_Ref(tmp);
-                Cudd_RecursiveDeref(_ddManager, _allBDD[_w - 1][i]);
-                _allBDD[_w - 1][i] = tmp;
-            }
-        }
-        else
-        {
-            for (int j = 0; j < _w; j++)
-            {
-                _allBDD[j][i] = Cudd_Not(Cudd_ReadOne(_ddManager));
-                Cudd_Ref(_allBDD[j][i]);
-            }
-        }
-    }
-
-}
-
 /**Function*************************************************************
 
   Synopsis    [Allocate new BDDs for each integer vector.]
@@ -89,7 +30,7 @@ void BDDSystem::initState()
   SeeAlso     []
 
 ***********************************************************************/
-void BDDSystem::allocBDD(DdNode ***Bdd, bool extend)
+void BDDSystem::allocBDD(DdNode ***allBDD, bool extend)
 {
     DdNode *tmp;
 
@@ -99,13 +40,13 @@ void BDDSystem::allocBDD(DdNode ***Bdd, bool extend)
 
     for (int i = 0; i < _r - _inc; i++)
         for (int j = 0; j < _w; j++)
-            W[j][i] = Bdd[j][i];
+            W[j][i] = allBDD[j][i];
 
     for (int i = 0; i < _w; i++)
-        delete[] Bdd[i];
+        delete[] allBDD[i];
 
     for (int i = 0; i < _w; i++)
-        Bdd[i] = W[i];
+        allBDD[i] = W[i];
 
     if (extend)
     {
@@ -113,12 +54,12 @@ void BDDSystem::allocBDD(DdNode ***Bdd, bool extend)
         {
             for (int j = 0; j < _w; j++)
             {
-                Bdd[j][i] = Cudd_ReadOne(_ddManager);
-                Cudd_Ref(Bdd[j][i]);
-                tmp = Cudd_bddAnd(_ddManager, Bdd[j][_r - _inc - 1], Bdd[j][i]);
+                allBDD[j][i] = Cudd_ReadOne(_ddManager);
+                Cudd_Ref(allBDD[j][i]);
+                tmp = Cudd_bddAnd(_ddManager, allBDD[j][_r - _inc - 1], allBDD[j][i]);
                 Cudd_Ref(tmp);
-                Cudd_RecursiveDeref(_ddManager, Bdd[j][i]);
-                Bdd[j][i] = tmp;
+                Cudd_RecursiveDeref(_ddManager, allBDD[j][i]);
+                allBDD[j][i] = tmp;
             }
         }
     }
