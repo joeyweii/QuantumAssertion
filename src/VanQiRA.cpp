@@ -1,7 +1,7 @@
-#include "eqChecker.h"
+#include "VanQiRA.h"
 
 // Constructor
-EquivalenceChecker::EquivalenceChecker
+VanQiRA::VanQiRA
 (
     std::vector<GateType>& gates,
     std::vector<std::vector<int>>& qubits,
@@ -22,7 +22,7 @@ EquivalenceChecker::EquivalenceChecker
 
 /**Function*************************************************************
 
-  Synopsis    [Run the checking procedure.]
+  Synopsis    [Run the synthesis procedure.]
 
   Description []
 
@@ -31,16 +31,17 @@ EquivalenceChecker::EquivalenceChecker
   SeeAlso     []
 
 ***********************************************************************/
-void EquivalenceChecker::check()
+void VanQiRA::run()
 {
     init();
-    calculateMiter();
+	simulate();
+    getVanishingEntries();
     printResult();
 }
 
 /**Function*************************************************************
 
-  Synopsis    [Initialize checker.]
+  Synopsis    [Initialization]
 
   Description []
 
@@ -50,10 +51,9 @@ void EquivalenceChecker::check()
 
 ***********************************************************************/
 
-void EquivalenceChecker::init()
+void VanQiRA::init()
 {
     ddInitialize();
-    initState(_stateVector);
 }
 
 /**Function*************************************************************
@@ -68,10 +68,10 @@ void EquivalenceChecker::init()
 
 ***********************************************************************/
 
-void EquivalenceChecker::initState(QuantumData* quanData)
+void VanQiRA::initState()
 {
-	auto &allBDD = quanData->_allBDD;
-	auto &r = quanData->_r;
+	auto &allBDD = _stateVector->_allBDD;
+	auto &r = _stateVector->_r;
 
 	int *basicState = new int[_n];
     for (int i = 0; i < _n; i++)
@@ -114,6 +114,7 @@ void EquivalenceChecker::initState(QuantumData* quanData)
             }
         }
     }
+	delete basicState;
 }
 
 /**Function*************************************************************
@@ -127,7 +128,7 @@ void EquivalenceChecker::initState(QuantumData* quanData)
   SeeAlso     []
 
 ***********************************************************************/
-void EquivalenceChecker::applyGate(GateType type, std::vector<int> qubit, bool right)
+void VanQiRA::applyGate(GateType type, std::vector<int> qubit, bool right)
 {
     if (right) for (int i = 0; i < qubit.size(); i++) qubit[i] += _n;
 
@@ -180,7 +181,7 @@ void EquivalenceChecker::applyGate(GateType type, std::vector<int> qubit, bool r
 
 /**Function*************************************************************
 
-  Synopsis    [Calculate the miter]
+  Synopsis    [Simulate the circuit]
 
   Description [
                Apply gates in circuit1 and circuit2 to evolve matrx from identity interleavingly.
@@ -193,8 +194,10 @@ void EquivalenceChecker::applyGate(GateType type, std::vector<int> qubit, bool r
   SeeAlso     []
 
 ***********************************************************************/
-void EquivalenceChecker::calculateMiter()
+void VanQiRA::simulate()
 {
+    initState();
+
     int cntCir = 0;
 
     if (_isReorder) Cudd_AutodynEnable(_ddManager, CUDD_REORDER_SYMM_SIFT);
@@ -210,7 +213,7 @@ void EquivalenceChecker::calculateMiter()
 
 /**Function*************************************************************
 
-  Synopsis    [Print the equivalence checking result.]
+  Synopsis    [Print the result.]
 
   Description []
 
@@ -219,13 +222,13 @@ void EquivalenceChecker::calculateMiter()
   SeeAlso     []
 
 ***********************************************************************/
-void EquivalenceChecker::printResult()
+void VanQiRA::printResult()
 {
     std::cout << "{\n";
     std::cout << "\t#Qubits (n): " << _n << '\n';
     std::cout << "\tGatecount of circuit: " << _gates.size() << '\n';
 	std::cout << "\tr: " << _stateVector->_r << '\n';		
-	std::cout << "\tSparsity: " << calSparsity(_stateVector) << std::endl;
+	std::cout << "\tSparsity: " << Cudd_CountMinterm(_ddManager, _S, _n)/pow(2, _n)<< std::endl;
     std::cout << "}\n";
 }
 
@@ -240,7 +243,7 @@ void EquivalenceChecker::printResult()
   SeeAlso     []
 
 ***********************************************************************/
-void EquivalenceChecker::printInfo(double runtime, size_t memPeak) const
+void VanQiRA::printInfo(double runtime, size_t memPeak) const
 {
     std::cout << '\n';
     std::cout << "Runtime: " << runtime << " seconds\n";
@@ -260,23 +263,21 @@ void EquivalenceChecker::printInfo(double runtime, size_t memPeak) const
 
 ***********************************************************************/
 
-double EquivalenceChecker::calSparsity(QuantumData *quanData)
+void VanQiRA::getVanishingEntries()
 {
-    DdNode* ddS;
-    ddS = Cudd_ReadLogicZero(_ddManager);
-    Cudd_Ref(ddS);
+    _S = Cudd_ReadLogicZero(_ddManager);
+    Cudd_Ref(_S);
 
     for (int i = 0; i < _w; i++)
     {
-        for (int j = 0, end_j = quanData->_r; j < end_j; j++)
+        for (int j = 0, end_j = _stateVector->_r; j < end_j; j++)
         {
-            DdNode* tem = ddS;
-            ddS = Cudd_bddOr(_ddManager, ddS, quanData->_allBDD[i][j]);
-            Cudd_Ref(ddS);
+            DdNode* tem = _S;
+            _S = Cudd_bddOr(_ddManager, _S, _stateVector->_allBDD[i][j]);
+            Cudd_Ref(_S);
             Cudd_RecursiveDeref(_ddManager, tem);
         }
     }
 
-    double sparsity = 1 - Cudd_CountMinterm(_ddManager, ddS, _n)/pow(2, _n); 
-    return sparsity;
+	_S = Cudd_Not(_S);
 }

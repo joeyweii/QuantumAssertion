@@ -23,7 +23,7 @@ struct QuantumData
 class BDDSystem
 {
 
-friend class EquivalenceChecker;
+friend class VanQiRA;
 
 public:
     BDDSystem(bool isReorder)

@@ -2,7 +2,7 @@
 #include <sys/time.h> 
 #include <fstream>
 
-#include "eqChecker.h"
+#include "VanQiRA.h"
 #include "memMeasure.h"
 
 extern void qasmParser(std::ifstream &inFile, std::vector<GateType> &gates, std::vector<std::vector<int> > &qubits, int &n);
@@ -55,9 +55,9 @@ int main(int argc, char **argv)
 
     gettimeofday(&tStart, NULL);
 
-    EquivalenceChecker checker(gates, qubits, n, isReorder);
+    VanQiRA vanqira(gates, qubits, n, isReorder);
 
-    checker.check();
+    vanqira.run();
 
     gettimeofday(&tFinish, NULL);
     elapsedTime = (tFinish.tv_sec - tStart.tv_sec) * 1000.0;
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
     runtime = elapsedTime / 1000.0;
     memPeak = getPeakRSS();
     
-    checker.printInfo(runtime, memPeak);
+    vanqira.printInfo(runtime, memPeak);
 
     return 0;
 }

@@ -1,13 +1,13 @@
-#ifndef _EQCHECKER_H_
-#define _EQCHECKER_H_
+#ifndef _VANQIRA_H_
+#define _VANQIRA_H_
 
 #include "bddSystem.h"
 
-class EquivalenceChecker : public BDDSystem
+class VanQiRA : public BDDSystem
 {
 public:
     // Constructor and Destructor
-    EquivalenceChecker
+    VanQiRA
     (
         std::vector<GateType>& gates,
         std::vector<std::vector<int>>& qubits,
@@ -15,27 +15,28 @@ public:
         bool isReorder
     );
 
-    ~EquivalenceChecker()  
+    ~VanQiRA()  
     {
         clear();
     }
 
-    void check();
+    void run();
     void printInfo(double runtime, size_t memPeak) const;
 
 private:
     std::vector<GateType> _gates;              // gates in the circuits. [#gate]
     std::vector<std::vector<int>> _qubits;     // ith qubits of gates in the circuit. [#gates]*[#qubits]
 	QuantumData	*_stateVector; 
+	DdNode* _S;
 
     void init();
-    void initState(QuantumData *quanData);
+    void initState();
     void applyGate(GateType type, std::vector<int> qubit, bool right);
-    void calculateMiter();
+    void simulate();
+	void getVanishingEntries();
     void printResult();
-	double calSparsity(QuantumData *quanData);
 
-    // Clean up EquivalenceChecker
+    // Clean up VanQiRA
     void clear() 
     {
         _gates.clear();
