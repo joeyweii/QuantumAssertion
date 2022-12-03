@@ -14,9 +14,51 @@
 void BDDSystem::ddInitialize()
 {
     _ddManager = Cudd_Init(2*_n, 2*_n, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0); // 0~(n-1): 0-variables, n~(2n-1): 1-variables
+}
 
-    _zeroNode = Cudd_Not(Cudd_ReadOne(_ddManager));
-    Cudd_Ref(_zeroNode);
+/**Function*************************************************************
+
+  Synopsis    [Alloc a new quantum data object and return.]
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
+QuantumData* BDDSystem::newQuantumData()
+{
+	QuantumData* quanData = new QuantumData();
+	quanData->_allBDD = nullptr;
+	quanData->_r = 32;
+	quanData->_k = 0;	
+	return quanData;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Delete a quantum data object.]
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
+void BDDSystem::deleteQuantumData(QuantumData* quanData)
+{
+	for (int i = 0; i < _w; i++)
+		for (int j = 0, end_j = quanData->_r; j < end_j; j++)
+			Cudd_RecursiveDeref(_ddManager, quanData->_allBDD[i][j]);
+
+	for (int i = 0; i < _w; i++)
+		delete[] quanData->_allBDD[i];
+
+	delete quanData;
 }
 
 /**Function*************************************************************
@@ -30,15 +72,15 @@ void BDDSystem::ddInitialize()
   SeeAlso     []
 
 ***********************************************************************/
-void BDDSystem::allocBDD(DdNode ***allBDD, bool extend)
+void BDDSystem::allocBDD(DdNode*** allBDD, int r, bool extend)
 {
     DdNode *tmp;
 
     DdNode ***W = new DdNode **[_w];
     for (int i = 0; i < _w; i++)
-        W[i] = new DdNode *[_r];
+        W[i] = new DdNode *[r];
 
-    for (int i = 0; i < _r - _inc; i++)
+    for (int i = 0; i < r - _inc; i++)
         for (int j = 0; j < _w; j++)
             W[j][i] = allBDD[j][i];
 
@@ -50,13 +92,13 @@ void BDDSystem::allocBDD(DdNode ***allBDD, bool extend)
 
     if (extend)
     {
-        for (int i = _r - _inc; i < _r; i++)
+        for (int i = r - _inc; i < r; i++)
         {
             for (int j = 0; j < _w; j++)
             {
                 allBDD[j][i] = Cudd_ReadOne(_ddManager);
                 Cudd_Ref(allBDD[j][i]);
-                tmp = Cudd_bddAnd(_ddManager, allBDD[j][_r - _inc - 1], allBDD[j][i]);
+                tmp = Cudd_bddAnd(_ddManager, allBDD[j][r - _inc - 1], allBDD[j][i]);
                 Cudd_Ref(tmp);
                 Cudd_RecursiveDeref(_ddManager, allBDD[j][i]);
                 allBDD[j][i] = tmp;

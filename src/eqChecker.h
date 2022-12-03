@@ -41,12 +41,7 @@ private:
         _gates.clear();
         _qubits.clear();
 
-        for (int i = 0; i < _w; i++)
-            for (int j = 0; j < _r; j++)
-                Cudd_RecursiveDeref(_ddManager, _stateVector->_allBDD[i][j]);
-
-		for (int i = 0; i < _w; i++)
-			delete[] _stateVector->_allBDD[i];
+		deleteQuantumData(_stateVector);
 
         Cudd_Quit(_ddManager);
     };

@@ -9,6 +9,7 @@ void BDDSystem::Toffoli(QuantumData* quanData, int targ, std::vector<int> cont, 
     assert((cont.size() + ncont.size()) < _n);
 
 	auto &allBDD = quanData->_allBDD;
+	auto &r = quanData->_r;
     int IsBadtarg = 0;
     int cont_tot = cont.size() + ncont.size();
     for (int i = 0; i < cont_tot; i++)
@@ -53,7 +54,7 @@ void BDDSystem::Toffoli(QuantumData* quanData, int targ, std::vector<int> cont, 
 
     for (int i = 0; i < _w; i++) // F = allBDD[i][j]
     {
-        for (int j = 0; j < _r; j++)
+        for (int j = 0; j < r; j++)
         {
             // term1
             term1 = Cudd_ReadOne(_ddManager);
@@ -127,6 +128,7 @@ void BDDSystem::Fredkin(QuantumData* quanData, int swapA, int swapB, std::vector
     assert(cont.size() < _n);
 	
 	auto &allBDD = quanData->_allBDD;
+	auto &r = quanData->_r;
 
     int IsBadtarg = 0;
     for (int i = 0; i < cont.size(); i++)
@@ -153,7 +155,7 @@ void BDDSystem::Fredkin(QuantumData* quanData, int swapA, int swapB, std::vector
 
     for (int i = 0; i < _w; i++) // F = allBDD[i][j]
     {
-        for (int j = 0; j < _r; j++)
+        for (int j = 0; j < r; j++)
         {
             // term1
             term1 = Cudd_ReadOne(_ddManager);
@@ -252,6 +254,7 @@ void BDDSystem::Hadamard(QuantumData *quanData, int iqubit)
     assert((iqubit >= 0) & (iqubit < 2*_n));
 
 	auto &allBDD = quanData->_allBDD;
+	auto &r = quanData->_r;
     quanData->_k += 1;
 
     DdNode *g, *d, *c, *tmp, *term1, *term2;
@@ -266,7 +269,7 @@ void BDDSystem::Hadamard(QuantumData *quanData, int iqubit)
         Cudd_Ref(tmp);
         Cudd_RecursiveDeref(_ddManager, c);
         c = tmp;
-        for (int j = 0; j < _r; j++)
+        for (int j = 0; j < r; j++)
         {
             // G
             g = Cudd_Cofactor(_ddManager, allBDD[i][j], Cudd_Not(Cudd_bddIthVar(_ddManager, iqubit)));
@@ -291,11 +294,11 @@ void BDDSystem::Hadamard(QuantumData *quanData, int iqubit)
             Cudd_RecursiveDeref(_ddManager, term2);
 
             // Detect overflow
-            if ((j == _r - 1) && !overflow_done)
+            if ((j == r - 1) && !overflow_done)
                 if (overflow3(g, d, c))
                 {
-                    _r += _inc;
-                    allocBDD(allBDD, true); // add new BDDs
+                    r += _inc;
+                    allocBDD(allBDD, r, true); // add new BDDs
                     overflow_done = 1;
                 }
 
@@ -309,7 +312,7 @@ void BDDSystem::Hadamard(QuantumData *quanData, int iqubit)
             allBDD[i][j] = tmp;
 
             // Carry
-            if (j == _r - 1)
+            if (j == r - 1)
             {
                 Cudd_RecursiveDeref(_ddManager, c);
                 Cudd_RecursiveDeref(_ddManager, g);
@@ -343,6 +346,7 @@ void BDDSystem::rx_pi_2(QuantumData *quanData, int iqubit, bool dagger)
     assert((iqubit >= 0) & (iqubit < 2*_n));
 
 	auto &allBDD = quanData->_allBDD;
+	auto &r = quanData->_r;
     quanData->_k += 1;
 
     int nshift = _w / 2;
@@ -351,12 +355,12 @@ void BDDSystem::rx_pi_2(QuantumData *quanData, int iqubit, bool dagger)
     DdNode *g, *d, *c, *tmp, *term1, *term2;
     DdNode ***copy = new DdNode **[_w];
     for (int i = 0; i < _w; i++)
-        copy[i] = new DdNode *[_r];
+        copy[i] = new DdNode *[r];
 
     // Copy
     for (int i = 0; i < _w; i++)
     {
-         for (int j = 0; j < _r; j++)
+         for (int j = 0; j < r; j++)
         {
             copy[i][j] = Cudd_ReadOne(_ddManager);
             Cudd_Ref(copy[i][j]);
@@ -375,7 +379,7 @@ void BDDSystem::rx_pi_2(QuantumData *quanData, int iqubit, bool dagger)
         else
             c = Cudd_Not(Cudd_ReadOne(_ddManager));
         Cudd_Ref(c);
-        for (int j = 0; j < _r; j++)
+        for (int j = 0; j < r; j++)
         {
             // D
             term1 = Cudd_Cofactor(_ddManager, copy[(i + nshift) % _w][j], Cudd_Not(Cudd_bddIthVar(_ddManager, iqubit)));
@@ -396,12 +400,12 @@ void BDDSystem::rx_pi_2(QuantumData *quanData, int iqubit, bool dagger)
             Cudd_RecursiveDeref(_ddManager, term1);
             Cudd_RecursiveDeref(_ddManager, term2);
             // Detect overflow
-            if ((j == _r - 1) && !overflow_done)
+            if ((j == r - 1) && !overflow_done)
                 if (overflow3(copy[i][j], d, c))
                 {
-                    _r += _inc;
-                    allocBDD(allBDD, true); // add new BDDs
-                    allocBDD(copy, true);
+                    r += _inc;
+                    allocBDD(allBDD, r, true); // add new BDDs
+                    allocBDD(copy, r, true);
                     overflow_done = 1;
                 }
             // Sum
@@ -413,7 +417,7 @@ void BDDSystem::rx_pi_2(QuantumData *quanData, int iqubit, bool dagger)
             Cudd_RecursiveDeref(_ddManager, allBDD[i][j]);
             allBDD[i][j] = tmp;
             // Carry
-            if (j == _r - 1)
+            if (j == r - 1)
             {
                 Cudd_RecursiveDeref(_ddManager, c);
                 Cudd_RecursiveDeref(_ddManager, d);
@@ -439,7 +443,7 @@ void BDDSystem::rx_pi_2(QuantumData *quanData, int iqubit, bool dagger)
     }
     for (int i = 0; i < _w; i++)
     {
-        for (int j = 0; j < _r; j++)
+        for (int j = 0; j < r; j++)
             Cudd_RecursiveDeref(_ddManager, copy[i][j]);
         delete[] copy[i];
     }
@@ -452,6 +456,7 @@ void BDDSystem::ry_pi_2(QuantumData *quanData, int iqubit, bool transpose)
     assert((iqubit >= 0) & (iqubit < 2*_n));
 
 	auto &allBDD = quanData->_allBDD;
+	auto &r = quanData->_r;
     quanData->_k += 1;
 
     int overflow_done = 0;
@@ -470,7 +475,7 @@ void BDDSystem::ry_pi_2(QuantumData *quanData, int iqubit, bool transpose)
         Cudd_Ref(tmp);
         Cudd_RecursiveDeref(_ddManager, c);
         c = tmp;
-        for (int j = 0; j < _r; j++)
+        for (int j = 0; j < r; j++)
         {
             // G
             g = Cudd_Cofactor(_ddManager, allBDD[i][j], Cudd_Not(var));
@@ -490,11 +495,11 @@ void BDDSystem::ry_pi_2(QuantumData *quanData, int iqubit, bool transpose)
             Cudd_RecursiveDeref(_ddManager, term2);
 
             // Detect overflow
-            if ((j == _r - 1) && !overflow_done)
+            if ((j == r - 1) && !overflow_done)
                 if (overflow3(g, d, c))
                 {
-                    _r += _inc;
-                    allocBDD(allBDD, true); // add new BDDs
+                    r += _inc;
+                    allocBDD(allBDD, r, true); // add new BDDs
                     overflow_done = 1;
                 }
             // Sum
@@ -506,7 +511,7 @@ void BDDSystem::ry_pi_2(QuantumData *quanData, int iqubit, bool transpose)
             Cudd_RecursiveDeref(_ddManager, allBDD[i][j]);
             allBDD[i][j] = tmp;
             // Carry
-            if (j == _r - 1)
+            if (j == r - 1)
             {
                 Cudd_RecursiveDeref(_ddManager, c);
                 Cudd_RecursiveDeref(_ddManager, g);
@@ -540,6 +545,7 @@ void BDDSystem::Phase_shift(QuantumData *quanData, int phase, int iqubit)
     assert((iqubit >= 0) & (iqubit < 2*_n));
 
 	auto &allBDD = quanData->_allBDD;
+	auto &r = quanData->_r;
 
     int nshift = _w / phase;
     int overflow_done = 0;
@@ -549,10 +555,10 @@ void BDDSystem::Phase_shift(QuantumData *quanData, int phase, int iqubit)
     // Copy
     DdNode **copy[_w];
     for (int i = 0; i < _w; i++)
-        copy[i] = new DdNode *[_r];
+        copy[i] = new DdNode *[r];
     for (int i = 0; i < _w; i++)
     {
-         for (int j = 0; j < _r; j++)
+         for (int j = 0; j < r; j++)
         {
             copy[i][j] = Cudd_ReadOne(_ddManager);
             Cudd_Ref(copy[i][j]);
@@ -572,7 +578,7 @@ void BDDSystem::Phase_shift(QuantumData *quanData, int phase, int iqubit)
             Cudd_Ref(c);
         }
 
-        for (int j = 0; j < _r; j++)
+        for (int j = 0; j < r; j++)
         {
             if (i >= _w - nshift)
             {
@@ -586,12 +592,12 @@ void BDDSystem::Phase_shift(QuantumData *quanData, int phase, int iqubit)
                 Cudd_RecursiveDeref(_ddManager, term2);
 
                 // Detect overflow
-                if ((j == _r - 1) && !overflow_done)
+                if ((j == r - 1) && !overflow_done)
                     if (overflow2(g, c))
                     {
-                        _r += _inc;
-                        allocBDD(allBDD, true); // add new BDDs
-                        allocBDD(copy, true);      // add new BDDs
+                        r += _inc;
+                        allocBDD(allBDD, r, true); // add new BDDs
+                        allocBDD(copy, r, true);      // add new BDDs
                         overflow_done = 1;
                     }
 
@@ -605,7 +611,7 @@ void BDDSystem::Phase_shift(QuantumData *quanData, int phase, int iqubit)
                     allBDD[i][j] = Cudd_bddXor(_ddManager, g, c);
                     Cudd_Ref(allBDD[i][j]);
                     // Carry
-                    if (j == _r - 1)
+                    if (j == r - 1)
                     {
                         Cudd_RecursiveDeref(_ddManager, g);
                         Cudd_RecursiveDeref(_ddManager, c);
@@ -639,7 +645,7 @@ void BDDSystem::Phase_shift(QuantumData *quanData, int phase, int iqubit)
 
     for (int i = 0; i < _w; i++)
     {
-        for (int j = 0; j < _r; j++)
+        for (int j = 0; j < r; j++)
             Cudd_RecursiveDeref(_ddManager, copy[i][j]);
         delete[] copy[i];
     }
@@ -651,6 +657,7 @@ void BDDSystem::Phase_shift_dagger(QuantumData* quanData, int phase, int iqubit)
     assert((iqubit >= 0) & (iqubit < 2*_n));
 
 	auto &allBDD = quanData->_allBDD;
+	auto &r = quanData->_r;
 
     int nshift = _w / abs(phase);
     int overflow_done = 0;
@@ -660,10 +667,10 @@ void BDDSystem::Phase_shift_dagger(QuantumData* quanData, int phase, int iqubit)
     // Copy
     DdNode **copy[_w];
     for (int i = 0; i < _w; i++)
-        copy[i] = new DdNode *[_r];
+        copy[i] = new DdNode *[r];
     for (int i = 0; i < _w; i++)
     {
-         for (int j = 0; j < _r; j++)
+         for (int j = 0; j < r; j++)
         {
             copy[i][j] = Cudd_ReadOne(_ddManager);
             Cudd_Ref(copy[i][j]);
@@ -683,7 +690,7 @@ void BDDSystem::Phase_shift_dagger(QuantumData* quanData, int phase, int iqubit)
             Cudd_Ref(c);
         }
 
-        for (int j = 0; j < _r; j++)
+        for (int j = 0; j < r; j++)
         {
             if (i < nshift)
             {
@@ -697,12 +704,12 @@ void BDDSystem::Phase_shift_dagger(QuantumData* quanData, int phase, int iqubit)
                 Cudd_RecursiveDeref(_ddManager, term2);
 
                 // Detect overflow
-                if ((j == _r - 1) && !overflow_done)
+                if ((j == r - 1) && !overflow_done)
                     if (overflow2(g, c))
                     {
-                        _r += _inc;
-                        allocBDD(allBDD, true); // add new BDDs
-                        allocBDD(copy, true);      // add new BDD
+                        r += _inc;
+                        allocBDD(allBDD, r, true); // add new BDDs
+                        allocBDD(copy, r, true);      // add new BDD
                         overflow_done = 1;
                     }
 
@@ -716,7 +723,7 @@ void BDDSystem::Phase_shift_dagger(QuantumData* quanData, int phase, int iqubit)
                     allBDD[i][j] = Cudd_bddXor(_ddManager, g, c);
                     Cudd_Ref(allBDD[i][j]);
                     // Carry
-                    if (j == _r - 1)
+                    if (j == r - 1)
                     {
                         Cudd_RecursiveDeref(_ddManager, g);
                         Cudd_RecursiveDeref(_ddManager, c);
@@ -750,7 +757,7 @@ void BDDSystem::Phase_shift_dagger(QuantumData* quanData, int phase, int iqubit)
 
     for (int i = 0; i < _w; i++)
     {
-        for (int j = 0; j < _r; j++)
+        for (int j = 0; j < r; j++)
             Cudd_RecursiveDeref(_ddManager, copy[i][j]);
         delete[] copy[i];
     }
@@ -762,12 +769,13 @@ void BDDSystem::PauliX(QuantumData *quanData, int iqubit)
     assert((iqubit >= 0) & (iqubit < 2*_n));
 
 	auto &allBDD = quanData->_allBDD;
+	auto &r = quanData->_r;
 
     DdNode *tmp, *term1, *term2;
 
     for (int i = 0; i < _w; i++) // F = allBDD[i][j]
     {
-        for (int j = 0; j < _r; j++)
+        for (int j = 0; j < r; j++)
         {
             // term1
             term1 = Cudd_Cofactor(_ddManager, allBDD[i][j], Cudd_Not(Cudd_bddIthVar(_ddManager, iqubit)));
@@ -803,6 +811,7 @@ void BDDSystem::PauliY(QuantumData *quanData, int iqubit, bool transpose)
     assert((iqubit >= 0) & (iqubit < 2*_n));
 
 	auto &allBDD = quanData->_allBDD;
+	auto &r = quanData->_r;
 
     int nshift = _w / 2;
 
@@ -815,7 +824,7 @@ void BDDSystem::PauliY(QuantumData *quanData, int iqubit, bool transpose)
     // PauliX(iqubit);
     for (int i = 0; i < _w; i++) // F = allBDD[i][j]
     {
-        for (int j = 0; j < _r; j++)
+        for (int j = 0; j < r; j++)
         {
             // term1
             term1 = Cudd_Cofactor(_ddManager, allBDD[i][j], Cudd_Not(var));
@@ -847,10 +856,10 @@ void BDDSystem::PauliY(QuantumData *quanData, int iqubit, bool transpose)
     // Copy
     DdNode **copy[_w];
     for (int i = 0; i < _w; i++)
-        copy[i] = new DdNode *[_r];
+        copy[i] = new DdNode *[r];
     for (int i = 0; i < _w; i++)
     {
-         for (int j = 0; j < _r; j++)
+         for (int j = 0; j < r; j++)
         {
             copy[i][j] = Cudd_ReadOne(_ddManager);
             Cudd_Ref(copy[i][j]);
@@ -870,7 +879,7 @@ void BDDSystem::PauliY(QuantumData *quanData, int iqubit, bool transpose)
             c = Cudd_bddAnd(_ddManager, Cudd_ReadOne(_ddManager), var);
         Cudd_Ref(c);
 
-        for (int j = 0; j < _r; j++)
+        for (int j = 0; j < r; j++)
         {
             if (i < nshift)
             {
@@ -892,12 +901,12 @@ void BDDSystem::PauliY(QuantumData *quanData, int iqubit, bool transpose)
             Cudd_RecursiveDeref(_ddManager, term2);
 
             // Detect overflow
-            if ((j == _r - 1) && !overflow_done)
+            if ((j == r - 1) && !overflow_done)
                 if (overflow2(g, c))
                 {
-                    _r += _inc;
-                    allocBDD(allBDD, true); // add new BDDs
-                    allocBDD(copy, true);
+                    r += _inc;
+                    allocBDD(allBDD, r, true); // add new BDDs
+                    allocBDD(copy, r, true);
                     overflow_done = 1;
                 }
 
@@ -911,7 +920,7 @@ void BDDSystem::PauliY(QuantumData *quanData, int iqubit, bool transpose)
                 allBDD[i][j] = Cudd_bddXor(_ddManager, g, c);
                 Cudd_Ref(allBDD[i][j]);
                 // Carry
-                if (j == _r - 1)
+                if (j == r - 1)
                 {
                     Cudd_RecursiveDeref(_ddManager, g);
                     Cudd_RecursiveDeref(_ddManager, c);
@@ -930,7 +939,7 @@ void BDDSystem::PauliY(QuantumData *quanData, int iqubit, bool transpose)
 
     for (int i = 0; i < _w; i++)
     {
-        for (int j = 0; j < _r; j++)
+        for (int j = 0; j < r; j++)
             Cudd_RecursiveDeref(_ddManager, copy[i][j]);
         delete[] copy[i];
     }
@@ -940,6 +949,7 @@ void BDDSystem::PauliY(QuantumData *quanData, int iqubit, bool transpose)
 void BDDSystem::PauliZ(QuantumData *quanData, std::vector<int> iqubit)
 {
 	auto &allBDD = quanData->_allBDD;
+	auto &r = quanData->_r;
 
     for (int i = 0; i < iqubit.size(); i++)
     {
@@ -969,7 +979,7 @@ void BDDSystem::PauliZ(QuantumData *quanData, std::vector<int> iqubit)
         Cudd_Ref(tmp);
         Cudd_RecursiveDeref(_ddManager, c);
         c = tmp;
-        for (int j = 0; j < _r; j++)
+        for (int j = 0; j < r; j++)
         {
             term1 = Cudd_bddAnd(_ddManager, allBDD[i][j], Cudd_Not(qubit_and));
             Cudd_Ref(term1);
@@ -991,11 +1001,11 @@ void BDDSystem::PauliZ(QuantumData *quanData, std::vector<int> iqubit)
             else
             {
                 // Detect overflow
-                if ((i == _r - 1) && !overflow_done)
+                if ((i == r - 1) && !overflow_done)
                     if (overflow2(inter, c))
                     {
-                        _r += _inc;
-                        allocBDD(allBDD, true); // add new BDDs
+                        r += _inc;
+                        allocBDD(allBDD, r, true); // add new BDDs
                         overflow_done = 1;
                     }
 
@@ -1003,7 +1013,7 @@ void BDDSystem::PauliZ(QuantumData *quanData, std::vector<int> iqubit)
                 allBDD[i][j] = Cudd_bddXor(_ddManager, inter, c);
                 Cudd_Ref(allBDD[i][j]);
                 // Carry
-                if (i == _r - 1)
+                if (i == r - 1)
                     Cudd_RecursiveDeref(_ddManager, inter);
                 else
                 {

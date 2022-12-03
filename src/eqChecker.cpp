@@ -17,9 +17,7 @@ EquivalenceChecker::EquivalenceChecker
     _gates = gates;
     _qubits = qubits;
     _n = n;
-	_stateVector = new QuantumData();
-	_stateVector->_allBDD = nullptr;
-	_stateVector->_k = 0;
+	_stateVector = newQuantumData();
 }
 
 /**Function*************************************************************
@@ -73,6 +71,7 @@ void EquivalenceChecker::init()
 void EquivalenceChecker::initState(QuantumData* quanData)
 {
 	auto &allBDD = quanData->_allBDD;
+	auto &r = quanData->_r;
 
 	int *basicState = new int[_n];
     for (int i = 0; i < _n; i++)
@@ -81,9 +80,9 @@ void EquivalenceChecker::initState(QuantumData* quanData)
 	DdNode *var, *tmp;
     allBDD = new DdNode **[_w];
     for (int i = 0; i < _w; i++)
-        allBDD[i] = new DdNode *[_r];
+        allBDD[i] = new DdNode *[r];
 
-    for (int i = 0; i < _r; i++)
+    for (int i = 0; i < r; i++)
     {
         if (i == 0)
         {
@@ -225,7 +224,7 @@ void EquivalenceChecker::printResult()
     std::cout << "{\n";
     std::cout << "\t#Qubits (n): " << _n << '\n';
     std::cout << "\tGatecount of circuit: " << _gates.size() << '\n';
-	std::cout << "\tr: " << _r << '\n';		
+	std::cout << "\tr: " << _stateVector->_r << '\n';		
 	std::cout << "\tSparsity: " << calSparsity(_stateVector) << std::endl;
     std::cout << "}\n";
 }
@@ -269,7 +268,7 @@ double EquivalenceChecker::calSparsity(QuantumData *quanData)
 
     for (int i = 0; i < _w; i++)
     {
-        for (int j = 0; j < _r; j++)
+        for (int j = 0, end_j = quanData->_r; j < end_j; j++)
         {
             DdNode* tem = ddS;
             ddS = Cudd_bddOr(_ddManager, ddS, quanData->_allBDD[i][j]);

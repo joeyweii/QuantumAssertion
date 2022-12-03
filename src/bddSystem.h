@@ -13,21 +13,22 @@
 
 #define PI 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899
 
+struct QuantumData
+{
+	DdNode ***_allBDD;
+	int		_k;
+    int		_r;
+};
+
 class BDDSystem
 {
 
 friend class EquivalenceChecker;
 
-struct QuantumData
-{
-	DdNode ***_allBDD;
-	int		_k;
-};
-
 public:
     BDDSystem(bool isReorder)
-    :   _ddManager(nullptr), _zeroNode(nullptr), _identityNode(nullptr),
-        _n(0), _r(32), _w(4), _inc(3), _isReorder(isReorder), _nodeCount(0)
+    :   _ddManager(nullptr),
+        _n(0), _w(4), _inc(3), _isReorder(isReorder), _nodeCount(0)
     {}
 
     ~BDDSystem()  
@@ -49,10 +50,7 @@ public:
 
 private:
     DdManager *_ddManager;      // BDD manager.
-    DdNode *_zeroNode;          // pointer to the zero node in BDD.
-    DdNode *_identityNode;      // pointer to the root node of the identity BDD.
     int _n;                     // # of qubits.
-    int _r;                     // resolution of integers.
     int _w;                     // # of integers = 4.
     int _inc;                   // add inc BDDs when overflow occurs, used in allocBDD.
     bool _isReorder;            // using reorder or not for BDD.
@@ -60,7 +58,9 @@ private:
 
     /* misc.cpp */
     void ddInitialize();
-    void allocBDD(DdNode ***allBDD, bool extend);
+	QuantumData* newQuantumData();
+	void deleteQuantumData(QuantumData* quanData);
+    void allocBDD(DdNode ***allBDD, int r, bool extend);
     int overflow3(DdNode *g, DdNode *h, DdNode *crin) const;
     int overflow2(DdNode *g, DdNode *crin) const;
     void updateNodeCount();
