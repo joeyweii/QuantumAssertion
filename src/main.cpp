@@ -16,8 +16,9 @@ int main(int argc, char **argv)
     ("help", "produce help message.")
     ("reorder", po::value<bool>()->default_value(true), "allow variable reordering or not.\n"
                                                              "0: disable 1: enable") 
-    ("circuit", po::value<std::string>()->implicit_value(""), "1st circuit for equivalence checking.")
-    ;
+    ("U", po::value<std::string>()->implicit_value(""), "(QASM file) circuit under assertion.")
+    ("Ua", po::value<std::string>()->implicit_value(""), "(QASM file) output assertion circuit.")
+	;
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, description), vm);
@@ -39,7 +40,7 @@ int main(int argc, char **argv)
 
     std::ifstream inFile;
 
-    inFile.open(vm["circuit"].as<std::string>()); 
+    inFile.open(vm["U"].as<std::string>()); 
     if (!inFile)
     {
         std::cerr << "Circuit file doesn't exist." << std::endl;
@@ -57,7 +58,7 @@ int main(int argc, char **argv)
 
     VanQiRA vanqira(gates, qubits, n, isReorder);
 
-    vanqira.run();
+    vanqira.synthesis(vm["Ua"].as<std::string>());
 
     gettimeofday(&tFinish, NULL);
     elapsedTime = (tFinish.tv_sec - tStart.tv_sec) * 1000.0;

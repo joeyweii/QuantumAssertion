@@ -1,5 +1,7 @@
 #include "VanQiRA.h"
 
+extern void synESOP(DdManager* ddManager, DdNode* ddNode, int nVars, std::string pFileNameOut);
+
 // Constructor
 VanQiRA::VanQiRA
 (
@@ -31,11 +33,12 @@ VanQiRA::VanQiRA
   SeeAlso     []
 
 ***********************************************************************/
-void VanQiRA::run()
+void VanQiRA::synthesis(std::string pFileNameOut)
 {
     init();
 	simulate();
     getVanishingEntries();
+	synESOP(_ddManager, _S, _n, pFileNameOut);
     printResult();
 }
 

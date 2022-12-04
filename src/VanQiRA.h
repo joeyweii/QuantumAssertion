@@ -20,7 +20,7 @@ public:
         clear();
     }
 
-    void run();
+    void synthesis(std::string pFileNameOut);
     void printInfo(double runtime, size_t memPeak) const;
 
 private:
