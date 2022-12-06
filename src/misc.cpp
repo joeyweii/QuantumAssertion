@@ -13,7 +13,7 @@
 ***********************************************************************/
 void BDDSystem::ddInitialize()
 {
-    _ddManager = Cudd_Init(2*_n, 2*_n, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0); // 0~(n-1): 0-variables, n~(2n-1): 1-variables
+    _ddManager = Cudd_Init(_n, _n, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0); // 0~(n-1): 0-variables, n~(2n-1): 1-variables
 }
 
 /**Function*************************************************************

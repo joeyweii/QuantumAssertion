@@ -1,11 +1,5 @@
-#ifndef _BDDEXTRACT_H_
-#define _BDDEXTRACT_H_
-
-#include "misc/vec/vec.h"
-#include "base/main/main.h"
-#ifdef ABC_USE_CUDD
-#include "bdd/extrab/extraBdd.h"
-#endif
+#ifndef _ORASYN_H_
+#define _ORASYN_H_
 
 #include <iostream>
 #include <fstream>
@@ -14,6 +8,10 @@
 #include <bitset>
 #include <cassert>
 #include <string>
+
+#include "../cudd/cudd/cudd.h"
+#include "../cudd/cudd/cuddInt.h"
+#include "../cudd/util/util.h"
 
 namespace psdkro
 {
@@ -81,10 +79,7 @@ public:
     
     // extract algorithm
 	void extract();
-
-	Vec_Wec_t* getESOPWec();
-    int getNumCubes() const;
-
+	void getESOP(std::vector<std::string> &ret);
 private:
 
 	// First pass: dicide the best expansion and calculate the cost 
@@ -103,5 +98,7 @@ private:
 	std::vector<cube> _esop;            // storing the resulting esop
 };
 
-void synESOP(DdManager *ddManager, DdNode *ddNode, int nVars, std::string pFileNameOut);
+bool synSOP(DdManager *ddManager, DdNode* ddNode, int nVars, std::vector<std::string> &ret);
+void synESOP(DdManager *ddManager, DdNode* ddNode, int nVars, std::vector<std::string> &ret);
+
 #endif

@@ -34,6 +34,7 @@ private:
     void applyGate(GateType type, std::vector<int> qubit, bool right);
     void simulate();
 	void getVanishingEntries();
+	void oracleSynthesis();
     void printResult();
 
     // Clean up VanQiRA

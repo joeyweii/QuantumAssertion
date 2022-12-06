@@ -1,6 +1,6 @@
-#include "esopSyn.h"
+#include "oraSyn.h"
 
-extern "C" Vec_Wec_t* MyExorcism( Vec_Wec_t * vEsop, int nIns);
+extern void esopMinimize(std::vector<std::string> &esop, std::vector<std::string> &esop_min, int nVars);
 
 EsopExtractionManager::EsopExtractionManager(DdManager* ddManager, DdNode* FRoot, int nVars)
 : _ddManager(ddManager), _FRoot(FRoot), _nVars(nVars), _values(nVars, VarValue::DONTCARE)
@@ -106,8 +106,7 @@ int EsopExtractionManager::fullExpand(DdNode *F)
 	std::pair<ExpType, int> ret;
 	if (costmax == cost0) 
 		ret = std::make_pair(ExpType::nD, cost1 + cost2);
-	else if (costmax == cost1)
-		ret = std::make_pair(ExpType::pD, cost0 + cost2);
+	else if (costmax == cost1)		ret = std::make_pair(ExpType::pD, cost0 + cost2);
 	else
 		ret = std::make_pair(ExpType::Sh, cost0 + cost1);
 	
@@ -115,116 +114,80 @@ int EsopExtractionManager::fullExpand(DdNode *F)
 	return ret.second;
 }
 
-Vec_Wec_t* EsopExtractionManager::getESOPWec()
+void EsopExtractionManager::getESOP(std::vector<std::string> &ret)
 {
-	Vec_Wec_t *vEsop = Vec_WecAlloc(0);
-	for(auto &cube: _esop)
-	{
-		Vec_Int_t *vCube = Vec_WecPushLevel(vEsop);
-        Vec_IntGrow(vCube, _nVars + 2);
-		for(int i = 0; i < _nVars; ++i)
-		{
-			if(cube._iscare.test(i))
-			{
-				if(cube._polarity.test(i))
-					Vec_IntPush(vCube, 2*i);
-				else
-					Vec_IntPush(vCube, 2*i+1);
-			}
-		}
-
-		Vec_IntPush(vCube, -1);
-	}
-
-	return vEsop;
+	for(auto &cube : _esop) 
+		ret.push_back(cube.str(_nVars));
 }
 
-int EsopExtractionManager::getNumCubes() const
+bool synSOP(DdManager *ddManager, DdNode* ddNode, int nVars, std::vector<std::string> &ret)
 {
-    return _esop.size();
+	DdNode* bCover, *zCover0, *zCover1, *zCover;
+
+    bCover = Cudd_zddIsop( ddManager, Cudd_Not(ddNode), Cudd_Not(ddNode), &zCover0 );
+    Cudd_Ref( zCover0 );
+    Cudd_Ref( bCover );
+    Cudd_RecursiveDeref( ddManager, bCover );
+
+    bCover = Cudd_zddIsop( ddManager, ddNode, ddNode, &zCover1 );
+	assert(bCover == ddNode);
+    Cudd_Ref( zCover1 );
+    Cudd_Ref( bCover );
+    Cudd_RecursiveDeref( ddManager, bCover );
+
+	int nCubes0, nCubes1, nCubes;
+	bool fPhase;
+	nCubes0 = Cudd_CountPathsToNonZero(zCover0);
+	nCubes1 = Cudd_CountPathsToNonZero(zCover1);
+
+	if ( nCubes1 <= nCubes0 )
+	{
+		nCubes = nCubes1;
+		zCover = zCover1;
+		Cudd_RecursiveDerefZdd( ddManager, zCover0 );
+		fPhase = true;
+	}
+	else
+	{
+		nCubes = nCubes0;
+		zCover = zCover0;
+		Cudd_RecursiveDerefZdd( ddManager, zCover1 );
+		fPhase = false;
+	}
+
+	DdGen* gen = nullptr;
+	int*   cube = nullptr;
+
+    Cudd_zddForeachPath(ddManager, zCover, gen, cube)
+	{
+		std::string s(nVars, '-');
+		for(int i = 0; i < nVars; i ++)
+		{
+			if(cube[2*i] != 1 && cube[2*i+1] != 1)
+				continue;
+			else if(cube[2*i+1] != 1)
+			{
+				assert(cube[2*i] == 1);
+				s[i] = '1';
+			}
+			else
+			{
+				assert(cube[2*i] != 1);
+				assert(cube[2*i+1] == 1);
+				s[i] = '0';
+			}
+		} 
+		ret.push_back(s);
+	}
+
+	return fPhase;
 }
 
-
-static void writeESOPWecIntoQasm(Vec_Wec_t *vEsop, int nVars, std::string &pFileName)
+void synESOP(DdManager *ddManager, DdNode* ddNode, int nVars, std::vector<std::string> &ret)
 {
-	std::fstream outFile;
-	outFile.open(pFileName, std::ios::out);
-
-	if(!outFile.is_open())
-	{
-		std::cerr << "[ERROR] Output QASM file cannot be opened." << std::endl;
-		return;
-	}
-
-	outFile << "OPENQASM 2.0;\n";
-    outFile << "include \"qelib1.inc\";\n";
-	outFile << "qreg q[" << nVars+1 << "];\n";
-
-	Vec_Int_t * vCube;	
-	int c, k, Lit;
-
-	std::vector<bool> phaseList(nVars, true);
-	std::vector<int> controlList;
-
-	Vec_WecForEachLevel( vEsop, vCube, c )
-	{
-		controlList.clear();
-
-		Vec_IntForEachEntry( vCube, Lit, k )
-		{
-			if(Lit < 0) continue;
-			int Var = Lit/2;
-			if(Lit%2 == 0 && phaseList[Var] == false)
-			{
-				outFile << "x q[" << Var << "];\n";
-				phaseList[Var] = true;
-			}
-			else if(Lit%2 == 1 && phaseList[Var] == true)
-			{
-				outFile << "x q[" << Var << "];\n";
-				phaseList[Var] = false;
-			}
-			controlList.push_back(Var);
-		}
-
-		if(controlList.size() == 0)
-			outFile << "x";
-		else if(controlList.size() == 1)
-			outFile << "cx";
-		else if(controlList.size() == 2)
-			outFile << "ccx";
-		else
-			outFile << "mcx";
-
-		for(int i = 0, end_i = controlList.size(); i < end_i; ++i)
-		{
-			if(i != 0) outFile << ',';
-			outFile << " q[" <<  controlList[i] << "]";
-		}
-
-		if(controlList.size() != 0) outFile << ',';
-		outFile << " q[" << nVars << "];\n";
-	}
-
-	for(int i = 0; i < nVars; ++i)
-	{
-		if(phaseList[i] == false)
-			outFile << "x q[" << i << "];\n";
-	}
-
-	outFile.close();
-}
-
-void synESOP(DdManager *ddManager, DdNode* ddNode, int nVars, std::string pFileNameOut)
-{	
-	// ESOP extraction
-	EsopExtractionManager m(ddManager, ddNode, nVars);	
+	EsopExtractionManager m(ddManager, ddNode, nVars);
 	m.extract();
-	Vec_Wec_t *vEsop = m.getESOPWec();
-
-	// ESOP minimization
-	Vec_Wec_t *vEsop_min = MyExorcism(vEsop, nVars);
-
-	// write ESOP into QASM
-	writeESOPWecIntoQasm(vEsop_min, nVars, pFileNameOut);
+	std::vector<std::string> esop;	
+	m.getESOP(esop);	
+	esopMinimize(esop, ret, nVars);
 }

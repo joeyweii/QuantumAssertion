@@ -1,1 +1,1 @@
-SRC	+=	src/ext-VanQiRA/esopSyn.cpp
+SRC	+=	src/ext-VanQiRA/myExorcism.cpp

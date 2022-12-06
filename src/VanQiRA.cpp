@@ -1,6 +1,6 @@
 #include "VanQiRA.h"
+#include "oraSyn.h"
 
-extern void synESOP(DdManager* ddManager, DdNode* ddNode, int nVars, std::string pFileNameOut);
 
 // Constructor
 VanQiRA::VanQiRA
@@ -38,7 +38,7 @@ void VanQiRA::synthesis(std::string pFileNameOut)
     init();
 	simulate();
     getVanishingEntries();
-	synESOP(_ddManager, _S, _n, pFileNameOut);
+	oracleSynthesis();
     printResult();
 }
 
@@ -256,7 +256,7 @@ void VanQiRA::printInfo(double runtime, size_t memPeak) const
 
 /**Function*************************************************************
 
-  Synopsis    [Calculate the sparsity of a state vector.]
+  Synopsis    [Calculate _S, which is the BDD characterizing the vanishing state.]
 
   Description []
 
@@ -283,4 +283,65 @@ void VanQiRA::getVanishingEntries()
     }
 
 	_S = Cudd_Not(_S);
+}
+
+int countLiterals(std::vector<std::string> &cubes)
+{
+	int ret = 0;
+	for(auto &cube: cubes)
+	{
+		for(int i = 0, end_i = cube.size(); i < end_i; ++i)
+			if(cube[i] != '-')
+				++ret;
+	}
+	return ret;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Boolean oracle synthesis on _S]
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void VanQiRA::oracleSynthesis()
+{
+	std::vector<std::string> esop;
+	std::vector<std::string> sop;
+
+	int sopPhase = synSOP(_ddManager, _S, _n, sop);
+	synESOP(_ddManager, _S, _n, esop);
+
+	/*
+	std::fstream sopFile;
+	sopFile.open("out.sop", std::ios::out);
+
+	if(sopPhase == false)
+		sopFile << "#Phase: 0\n";
+	sopFile << "#nCubes: " <<  sop.size() << '\n';
+	sopFile << "#nLiterals: " << countLiterals(sop) << '\n';
+	sopFile << ".i " << _n << '\n';
+	sopFile << ".o 1\n";
+	sopFile << ".type sop\n";
+	for(auto &cube: sop)
+		sopFile << cube << " 1\n";
+	sopFile << ".e\n";
+	sopFile.close();
+
+	std::fstream esopFile;
+	esopFile.open("out.esop", std::ios::out);
+	esopFile << "#nCubes: " <<  esop.size() << '\n';
+	esopFile << "#nLiterals: " << countLiterals(esop) << '\n';
+	esopFile << ".i " << _n << '\n';
+	esopFile << ".o 1\n";
+	esopFile << ".type esop\n";
+	for(auto &cube: esop)
+		esopFile << cube << " 1\n";
+	esopFile << ".e\n";
+	esopFile.close();
+	*/
 }
