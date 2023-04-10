@@ -5,68 +5,96 @@
 #include <cstdlib> 
 #include <string> 
 #include <vector>
+#include <deque>
 
 #include "../cudd/cudd/cudd.h"
 #include "../cudd/cudd/cuddInt.h"
 #include "../cudd/util/util.h"
-#include "gateType.h"
+#include "qCkt.h"
 
-#define PI 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899
-
-struct QuantumData
+class Tensor
 {
-	DdNode ***_allBDD;
+public:
 	int		_k;
-    int		_r;
+	int		_r;
+	int		_rank;
+	std::vector<std::deque<DdNode*>> _allBDD;
+
+	Tensor(int r, int rank)
+	:_k(0), _r(r), _rank(rank),
+	_allBDD(std::vector<std::deque<DdNode*>>(4, std::deque<DdNode*>(_r, nullptr)))
+	{}
 };
 
 class BDDSystem
 {
+protected:
 
-friend class VanQiRA;
+	enum class BitWidthMode
+	{
+		ExtendBitWidth,
+		DropLSB,
+		DropMSB
+	};
 
-public:
-    BDDSystem(bool isReorder)
+    explicit BDDSystem(int maxRank, int fBitWidthMode, bool fReorder)
     :   _ddManager(nullptr),
-        _n(0), _w(4), _inc(3), _isReorder(isReorder), _nodeCount(0)
-    {}
-
-    ~BDDSystem()  
+        _w(4), _maxNodeCount(0)
     {
-        clear();
+		_ddManager = Cudd_Init(maxRank, maxRank, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0);
+		switch(fBitWidthMode)
+		{
+			case 1: _bitWidthMode = BitWidthMode::DropLSB; break;
+			case 2: _bitWidthMode = BitWidthMode::DropMSB; break;
+			default: _bitWidthMode = BitWidthMode::ExtendBitWidth; 
+		}
+		if (fReorder) Cudd_AutodynEnable(_ddManager, CUDD_REORDER_SYMM_SIFT);
+	}
+
+    virtual ~BDDSystem()  
+    {
+		if(Cudd_CheckZeroRef(_ddManager) > 10)
+			std::cout << "\nThe number of referenced nodes = " << Cudd_CheckZeroRef(_ddManager) << std::endl;
+		Cudd_Quit(_ddManager);
     }
 
     /* gateOpe.cpp */
-    void Toffoli(QuantumData *quanData, int targ, std::vector<int> cont, std::vector<int> ncont);
-    void Fredkin(QuantumData *quanData, int swapA , int swapB, std::vector<int> cont);
-    void Hadamard(QuantumData *quanData, int iqubit);
-    void rx_pi_2(QuantumData *quanData, int iqubit, bool dagger);
-    void ry_pi_2(QuantumData *quanData, int iqubit, bool tanspose);
-    void Phase_shift(QuantumData *quanData, int phase, int iqubit); // phase can only be 2 to the power of an integer
-    void Phase_shift_dagger(QuantumData *quanData, int phase, int iqubit);
-    void PauliX(QuantumData *quanData, int iqubit);
-    void PauliY(QuantumData *quanData, int iqubit, bool transpose);
-    void PauliZ(QuantumData *quanData, std::vector<int> iqubit); // Z or CZ
+    void Toffoli(Tensor *tensor, const std::vector<int> &qubits);
+    void Fredkin(Tensor *tensor, const std::vector<int> &qubits);
+    void Hadamard(Tensor *tensor, const std::vector<int> &qubits);
+    void Rx_pi_2(Tensor *tensor, const std::vector<int> &qubits);
+    void Rx_pi_2_dagger(Tensor *tensor, const std::vector<int> &qubits);
+    void Ry_pi_2(Tensor *tensor, const std::vector<int> &qubits, const bool fTranspose);
+    void Ry_pi_2_dagger(Tensor *tensor, const std::vector<int> &qubits, const bool fTranspose);
+    void Phase_shift(Tensor *tensor, const std::vector<int> &qubits, const int phase); // phase can only be 2 to the power of an integer
+    void Phase_shift_dagger(Tensor *tensor, const std::vector<int> &qubits, const int phase);
+    void PauliX(Tensor *tensor, const std::vector<int> &qubits);
+    void PauliY(Tensor *tensor, const std::vector<int> &qubits, const bool fTranspose);
+    void PauliZ(Tensor *tensor, const std::vector<int> &qubits); 
+	void applyGate(const Gate* gate, Tensor *tensor, const bool fTranspose);
 
-private:
-    DdManager *_ddManager;      // BDD manager.
-    int _n;                     // # of qubits.
-    int _w;                     // # of integers = 4.
-    int _inc;                   // add inc BDDs when overflow occurs, used in allocBDD.
-    bool _isReorder;            // using reorder or not for BDD.
-    unsigned long _nodeCount;   // node count.
+	/* propCheck.cpp */
+	DdNode* sparsityDD(Tensor *tensor) const;
+	double sparsity(Tensor *tensor) const;
+	bool eqCheckTwoTensor(Tensor *tensor1, Tensor *tensor2);
 
     /* misc.cpp */
-    void ddInitialize();
-	QuantumData* newQuantumData();
-	void deleteQuantumData(QuantumData* quanData);
-    void allocBDD(DdNode ***allBDD, int r, bool extend);
-    int overflow3(DdNode *g, DdNode *h, DdNode *crin) const;
-    int overflow2(DdNode *g, DdNode *crin) const;
-    void updateNodeCount();
+	Tensor* newTensor(int r, int rank);
+	void deleteTensor(Tensor* tensor);
+	void printTensor(Tensor* tensor) const;
+	bool isTensorLSBZero(Tensor* tensor) const;
+    void incBDDsBitWidth(std::vector<std::deque<DdNode*>> &allBDD);
+    void dropTensorLSB(Tensor* tensor);
+    void dropTensorMSB(Tensor* tensor);
+	void dropTensorBits(Tensor *tensor);
+	void increaseTensorKByOne(Tensor *tensor);
+    bool checkAdderOverflow(DdNode *g, DdNode *h, DdNode *crin) const;
+    void updateMaxNodeCount();
 
-    // Clean up BDD system
-    void clear() {};
+    DdManager *_ddManager;			// BDD manager.
+    int _w;							// # of integers = 4.
+    unsigned long _maxNodeCount;	// node count.
+	BitWidthMode	_bitWidthMode;			// mode of bits' control
 };
 
 #endif

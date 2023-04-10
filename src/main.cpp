@@ -2,10 +2,10 @@
 #include <sys/time.h> 
 #include <fstream>
 
-#include "VanQiRA.h"
+#include "qcSim.h"
 #include "memMeasure.h"
 
-extern void qasmParser(std::ifstream &inFile, std::vector<GateType> &gates, std::vector<std::vector<int> > &qubits, int &n);
+extern Circuit* qasmParser(const std::string& filename);
 
 int main(int argc, char **argv)
 {
@@ -15,10 +15,13 @@ int main(int argc, char **argv)
     description.add_options()
     ("help", "produce help message.")
     ("reorder", po::value<bool>()->default_value(true), "allow variable reordering or not.\n"
-                                                             "0: disable 1: enable") 
-    ("U", po::value<std::string>()->implicit_value(""), "(QASM file) circuit under assertion.")
-    ("Ua", po::value<std::string>()->implicit_value(""), "(QASM file) output assertion circuit.")
-	;
+                                                             "0: disable 1: enable default: 1") 
+	("bitwidth_control", po::value<int>()->default_value(0), "bitwidth control when overflowing\n"
+												 "0: extendBitwidth 1: dropLSB")
+	("init_bitwidth", po::value<int>()->default_value(32), "initial bitwidth r\n"
+															"default: 32")
+    ("circuit", po::value<std::string>()->implicit_value(""), "circuit under simulation.")
+    ;
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, description), vm);
@@ -30,24 +33,13 @@ int main(int argc, char **argv)
 	    return 0;
 	}
 
+    bool fReorder = vm["reorder"].as<bool>();
+	int	 fBitWidthControl = vm["bitwidth_control"].as<int>();
+	int	 fInitBitWidth = vm["init_bitwidth"].as<int>();
 
-    bool isReorder = vm["reorder"].as<bool>();
+    Circuit *circuit = qasmParser(vm["circuit"].as<std::string>());
 
-    // Parse QASM files
-    std::vector<GateType> gates;
-    std::vector<std::vector<int>> qubits;
-    int n; 
-
-    std::ifstream inFile;
-
-    inFile.open(vm["U"].as<std::string>()); 
-    if (!inFile)
-    {
-        std::cerr << "Circuit file doesn't exist." << std::endl;
-        return 0;
-    }
-    qasmParser(inFile, gates, qubits, n);
-    inFile.close();
+	int nQubits = circuit->getNumberQubits();
 
     struct timeval tStart, tFinish;
     double elapsedTime;
@@ -56,9 +48,9 @@ int main(int argc, char **argv)
 
     gettimeofday(&tStart, NULL);
 
-    VanQiRA vanqira(gates, qubits, n, isReorder);
+    VanQiRA vanqira(nQubits, fInitBitWidth, fBitWidthControl, fReorder);
 
-    vanqira.synthesis(vm["Ua"].as<std::string>());
+    vanqira.simulateCircuit(circuit);
 
     gettimeofday(&tFinish, NULL);
     elapsedTime = (tFinish.tv_sec - tStart.tv_sec) * 1000.0;
@@ -67,7 +59,14 @@ int main(int argc, char **argv)
     runtime = elapsedTime / 1000.0;
     memPeak = getPeakRSS();
     
-    vanqira.printInfo(runtime, memPeak);
+    std::cout << "----- Circuit Info. -----\n";
+    std::cout << "#Qubits: " << nQubits << '\n';
+    std::cout << "#Gates in circuit: " << circuit->getGateCount() << '\n';
+
+    std::cout << "----- Resource Usage -----\n";
+    std::cout << "Runtime: " << runtime << " seconds\n";
+    std::cout << "Peak memory usage: " << memPeak << " bytes\n"; 
+    std::cout << "--------------------------\n";
 
     return 0;
 }

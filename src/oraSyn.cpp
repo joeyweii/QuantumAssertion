@@ -120,69 +120,6 @@ void EsopExtractionManager::getESOP(std::vector<std::string> &ret)
 		ret.push_back(cube.str(_nVars));
 }
 
-bool synSOP(DdManager *ddManager, DdNode* ddNode, int nVars, std::vector<std::string> &ret)
-{
-	DdNode* bCover, *zCover0, *zCover1, *zCover;
-
-    bCover = Cudd_zddIsop( ddManager, Cudd_Not(ddNode), Cudd_Not(ddNode), &zCover0 );
-    Cudd_Ref( zCover0 );
-    Cudd_Ref( bCover );
-    Cudd_RecursiveDeref( ddManager, bCover );
-
-    bCover = Cudd_zddIsop( ddManager, ddNode, ddNode, &zCover1 );
-	assert(bCover == ddNode);
-    Cudd_Ref( zCover1 );
-    Cudd_Ref( bCover );
-    Cudd_RecursiveDeref( ddManager, bCover );
-
-	int nCubes0, nCubes1, nCubes;
-	bool fPhase;
-	nCubes0 = Cudd_CountPathsToNonZero(zCover0);
-	nCubes1 = Cudd_CountPathsToNonZero(zCover1);
-
-	if ( nCubes1 <= nCubes0 )
-	{
-		nCubes = nCubes1;
-		zCover = zCover1;
-		Cudd_RecursiveDerefZdd( ddManager, zCover0 );
-		fPhase = true;
-	}
-	else
-	{
-		nCubes = nCubes0;
-		zCover = zCover0;
-		Cudd_RecursiveDerefZdd( ddManager, zCover1 );
-		fPhase = false;
-	}
-
-	DdGen* gen = nullptr;
-	int*   cube = nullptr;
-
-    Cudd_zddForeachPath(ddManager, zCover, gen, cube)
-	{
-		std::string s(nVars, '-');
-		for(int i = 0; i < nVars; i ++)
-		{
-			if(cube[2*i] != 1 && cube[2*i+1] != 1)
-				continue;
-			else if(cube[2*i+1] != 1)
-			{
-				assert(cube[2*i] == 1);
-				s[i] = '1';
-			}
-			else
-			{
-				assert(cube[2*i] != 1);
-				assert(cube[2*i+1] == 1);
-				s[i] = '0';
-			}
-		} 
-		ret.push_back(s);
-	}
-
-	return fPhase;
-}
-
 void synESOP(DdManager *ddManager, DdNode* ddNode, int nVars, std::vector<std::string> &ret)
 {
 	EsopExtractionManager m(ddManager, ddNode, nVars);
