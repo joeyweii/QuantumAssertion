@@ -28,7 +28,7 @@ DdNode* BDDSystem::sparsityDD(Tensor *tensor) const
 		}
 	}
 
-	return dd;
+	return Cudd_Not(dd);
 }
 
 /**Function*************************************************************
@@ -45,7 +45,7 @@ DdNode* BDDSystem::sparsityDD(Tensor *tensor) const
 double BDDSystem::sparsity(Tensor *tensor) const
 {
 	DdNode* dd = sparsityDD(tensor);
-	double sp = 1 - Cudd_CountMinterm(_ddManager, dd, tensor->_rank) / pow(2, tensor->_rank);
+	double sp = Cudd_CountMinterm(_ddManager, dd, tensor->_rank) / pow(2, tensor->_rank);
 	Cudd_RecursiveDeref(_ddManager, dd);
 	return sp;
 }

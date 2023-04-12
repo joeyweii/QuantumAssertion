@@ -94,7 +94,7 @@ protected:
     DdManager *_ddManager;			// BDD manager.
     int _w;							// # of integers = 4.
     unsigned long _maxNodeCount;	// node count.
-	BitWidthMode	_bitWidthMode;			// mode of bits' control
+	BitWidthMode	_bitWidthMode;  // mode of bits' control
 };
 
 #endif

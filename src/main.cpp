@@ -2,7 +2,7 @@
 #include <sys/time.h> 
 #include <fstream>
 
-#include "qcSim.h"
+#include "VanQiRA.h"
 #include "memMeasure.h"
 
 extern Circuit* qasmParser(const std::string& filename);
@@ -20,7 +20,12 @@ int main(int argc, char **argv)
 												 "0: extendBitwidth 1: dropLSB")
 	("init_bitwidth", po::value<int>()->default_value(32), "initial bitwidth r\n"
 															"default: 32")
-    ("circuit", po::value<std::string>()->implicit_value(""), "circuit under simulation.")
+    ("U", po::value<std::string>()->implicit_value(""), "circuit under assertion.")
+    ("Ua", po::value<std::string>()->implicit_value(""), "output assertion circuits.")
+    ("assert_point_mode", po::value<int>()->default_value(0), "assertion point\n"
+                                                         "0: final"
+                                                         "1: middle"
+                                                         "2: sparsity")
     ;
 
     po::variables_map vm;
@@ -36,8 +41,11 @@ int main(int argc, char **argv)
     bool fReorder = vm["reorder"].as<bool>();
 	int	 fBitWidthControl = vm["bitwidth_control"].as<int>();
 	int	 fInitBitWidth = vm["init_bitwidth"].as<int>();
+    std::string UFilename(vm["U"].as<std::string>());
+    std::string UaFilename(vm["Ua"].as<std::string>());
+    AssertPointMode assertPointMode = static_cast<AssertPointMode>(vm["assert_point_mode"].as<int>());
 
-    Circuit *circuit = qasmParser(vm["circuit"].as<std::string>());
+    Circuit *circuit = qasmParser(UFilename);
 
 	int nQubits = circuit->getNumberQubits();
 
@@ -50,7 +58,8 @@ int main(int argc, char **argv)
 
     VanQiRA vanqira(nQubits, fInitBitWidth, fBitWidthControl, fReorder);
 
-    vanqira.simulateCircuit(circuit);
+    vanqira.simUfindAssertPoint(circuit, assertPointMode);
+    vanqira.synUa(UaFilename);
 
     gettimeofday(&tFinish, NULL);
     elapsedTime = (tFinish.tv_sec - tStart.tv_sec) * 1000.0;

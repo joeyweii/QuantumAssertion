@@ -98,7 +98,6 @@ private:
 	std::vector<cube> _esop;            // storing the resulting esop
 };
 
-bool synSOP(DdManager *ddManager, DdNode* ddNode, int nVars, std::vector<std::string> &ret);
 void synESOP(DdManager *ddManager, DdNode* ddNode, int nVars, std::vector<std::string> &ret);
 
 #endif
