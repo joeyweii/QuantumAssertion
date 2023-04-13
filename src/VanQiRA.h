@@ -34,7 +34,7 @@ private:
     DdNode *_S;
 
     void initState(Tensor *tensor);
-    void esop2qasm(const std::vector<std::string> &esop, const std::string filename);
+    void writeQASM(const std::string filename, const std::vector<std::string> &esop);
     int cubeCountNumControl(const std::string &cube);
     void recordAssertPoint(int assertPoint);
 };

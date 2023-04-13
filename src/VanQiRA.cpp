@@ -112,7 +112,7 @@ void VanQiRA::synUa(const std::string filename)
     assert(_S); assert(_assertPoint != -1);
     synESOP(_ddManager, _S, _nQubits, esop); 
 
-    esop2qasm(esop, filename);
+    writeQASM(filename, esop);
 }
 
 /**Function*************************************************************
@@ -127,7 +127,7 @@ void VanQiRA::synUa(const std::string filename)
 
 ***********************************************************************/
 
-void VanQiRA::esop2qasm(const std::vector<std::string> &esop, const std::string filename)
+void VanQiRA::writeQASM(const std::string filename, const std::vector<std::string> &esop)
 {
     std::ofstream outFile;
 
@@ -138,6 +138,7 @@ void VanQiRA::esop2qasm(const std::vector<std::string> &esop, const std::string 
         return;
     }
 
+    outFile << "#AssertPoint " << _assertPoint << '\n';
     outFile << "OPENQASM 2.0;\n";
     outFile << "include \"qelib1.inc\";\n";
     outFile << "qreg q[" << std::to_string(_nQubits+1) << "];\n";  
