@@ -2,6 +2,7 @@ import re
 import sys
 import numpy as np
 import random as rd
+import math
 
 from utils import *
 from qiskit import *
@@ -40,16 +41,16 @@ if __name__ == '__main__':
                 U1Ua_err_state0.append(U1Ua_err_state[i])
 
             U1Ua_err_state1 = []
-            prob = 0
+            prob = 0.
 
             for i in range(pow(2, nQubits), pow(2, nQubits+1)):
                 U1Ua_err_state1.append(U1Ua_err_state[i])
                 prob += abs(U1Ua_err_state[i])**2
 
             if(1-prob != 0):
-                U1Ua_err_state0 = [i/(1-prob) for i in U1Ua_err_state0]
+                U1Ua_err_state0 = [i/math.sqrt(1-prob) for i in U1Ua_err_state0]
             if(prob != 0):
-                U1Ua_err_state1 = [i/prob for i in U1Ua_err_state1]
+                U1Ua_err_state1 = [i/math.sqrt(prob) for i in U1Ua_err_state1]
 
             if(rd.random() <= prob):
                 accNumGates += (len(U1.data) + len(Ua.data))
