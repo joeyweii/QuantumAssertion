@@ -68,6 +68,7 @@ int main(int argc, char **argv)
     runtime = elapsedTime / 1000.0;
     memPeak = getPeakRSS();
     
+    /*
     std::cout << "----- Circuit Info. -----\n";
     std::cout << "#Qubits: " << nQubits << '\n';
     std::cout << "#Gates in circuit: " << circuit->getGateCount() << '\n';
@@ -76,6 +77,7 @@ int main(int argc, char **argv)
     std::cout << "Runtime: " << runtime << " seconds\n";
     std::cout << "Peak memory usage: " << memPeak << " bytes\n"; 
     std::cout << "--------------------------\n";
+    */
 
     return 0;
 }

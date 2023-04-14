@@ -65,7 +65,7 @@ void VanQiRA::simUfindAssertPoint(const Circuit *circuit, const AssertPointMode 
                 break;
             case AssertPointMode::Sparsity:
                 double cost = 1 - sparsity(_state);
-                if(position > circuit->getGateCount()/4 && cost < minCost)
+                if(position > circuit->getGateCount()/3 && cost < minCost)
                 {
                     minCost = cost;
                     recordAssertPoint(position);
