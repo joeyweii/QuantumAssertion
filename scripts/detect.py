@@ -8,7 +8,7 @@ from qiskit import *
 from qiskit.quantum_info import Statevector
 
 if __name__ == '__main__':
-    trials = 1000
+    trials = 10
 
     U = readQasm(sys.argv[1])
     Ua = readQasm(sys.argv[2])

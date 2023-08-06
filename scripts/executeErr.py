@@ -7,11 +7,11 @@ import math
 from utils import *
 from qiskit import *
 from qiskit.quantum_info import Statevector
-
+from qiskit.extensions import Initialize
 
 if __name__ == '__main__':
-    successCount = 100
-
+    successCount = 5000
+    threshold = 1e-4
     U = readQasm(sys.argv[1])
     Ua = readQasm(sys.argv[2])
     assertPoint = readAssertPoint(sys.argv[2])
@@ -23,9 +23,8 @@ if __name__ == '__main__':
 
     attempts = 0
     accNumGates = 0
-    for i in range(successCount):
-        print(i)
 
+    for i in range(successCount):
         while(True):
             U1_err = circInsertError(U1, err_prob)
             Ua_err = circInsertError(Ua, err_prob)
@@ -47,9 +46,8 @@ if __name__ == '__main__':
                 U1Ua_err_state1.append(U1Ua_err_state[i])
                 prob += abs(U1Ua_err_state[i])**2
 
-            if(1-prob != 0):
-                U1Ua_err_state0 = [i/math.sqrt(1-prob) for i in U1Ua_err_state0]
-            if(prob != 0):
+            if(not (prob < threshold or abs(1-prob) < threshold)):
+                U1Ua_err_state0 = [i/math.sqrt(abs(1-prob)) for i in U1Ua_err_state0]
                 U1Ua_err_state1 = [i/math.sqrt(prob) for i in U1Ua_err_state1]
 
             if(rd.random() <= prob):
@@ -57,8 +55,8 @@ if __name__ == '__main__':
                 continue
             
             U2_err = circInsertError(U2, err_prob)
-            U2_err.initialize(U1Ua_err_state0)
-            U1UaU2_err_state = Statevector.from_instruction(U2_err)
+
+            U1UaU2_err_state = Statevector.from_instruction(U2_err.compose(Initialize(U1Ua_err_state0), front=True, inplace=False))
             U1UaU2_err_fid = fidelity(gdnState, U1UaU2_err_state)
 
             attempts += 1
@@ -67,10 +65,9 @@ if __name__ == '__main__':
             if(fidNotOne(U1UaU2_err_fid) == False):
                 break
 
-        delete_last_line()
-
     print("|Ua|: ", len(Ua.data))
     print("AssertPoint: ", assertPoint+1)
     print("Success Rate: %.2f"%(successCount/attempts))
     print("Average #Gate: %.2f"%(accNumGates/successCount))
-    
+
+

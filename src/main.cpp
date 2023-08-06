@@ -23,9 +23,14 @@ int main(int argc, char **argv)
     ("U", po::value<std::string>()->implicit_value(""), "circuit under assertion.")
     ("Ua", po::value<std::string>()->implicit_value(""), "output assertion circuits.")
     ("assert_point_mode", po::value<int>()->default_value(0), "assertion point\n"
-                                                         "0: final"
-                                                         "1: middle"
-                                                         "2: sparsity")
+                                                         "0: point1\n"
+                                                         "1: point2\n"
+                                                         "2: point3\n"
+                                                         "3: point4\n"
+                                                         "4: final\n"
+                                                         "5: SR\n"
+                                                         "6: EG\n")
+    ("dp", po::value<int>()->default_value(0), "expected |Ua|\n")
     ;
 
     po::variables_map vm;
@@ -58,7 +63,7 @@ int main(int argc, char **argv)
 
     VanQiRA vanqira(nQubits, fInitBitWidth, fBitWidthControl, fReorder);
 
-    vanqira.simUfindAssertPoint(circuit, assertPointMode);
+    vanqira.simUfindAssertPoint(circuit, assertPointMode, static_cast<double>(vm["dp"].as<int>()));
     vanqira.synUa(UaFilename);
 
     gettimeofday(&tFinish, NULL);
@@ -68,7 +73,6 @@ int main(int argc, char **argv)
     runtime = elapsedTime / 1000.0;
     memPeak = getPeakRSS();
     
-    /*
     std::cout << "----- Circuit Info. -----\n";
     std::cout << "#Qubits: " << nQubits << '\n';
     std::cout << "#Gates in circuit: " << circuit->getGateCount() << '\n';
@@ -77,7 +81,6 @@ int main(int argc, char **argv)
     std::cout << "Runtime: " << runtime << " seconds\n";
     std::cout << "Peak memory usage: " << memPeak << " bytes\n"; 
     std::cout << "--------------------------\n";
-    */
 
     return 0;
 }

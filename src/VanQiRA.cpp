@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <fstream>
+#include <cmath>
 
 extern void synESOP(DdManager *ddManager, DdNode* ddNode, int nVars, std::vector<std::string> &ret);
 
@@ -43,7 +44,7 @@ VanQiRA::~VanQiRA()
   SeeAlso     []
 
 ***********************************************************************/
-void VanQiRA::simUfindAssertPoint(const Circuit *circuit, const AssertPointMode assertPointMode)
+void VanQiRA::simUfindAssertPoint(const Circuit *circuit, const AssertPointMode assertPointMode, const double dp)
 {
     initState(_state);
 
@@ -55,22 +56,88 @@ void VanQiRA::simUfindAssertPoint(const Circuit *circuit, const AssertPointMode 
 
         switch(assertPointMode)
         {
-            case AssertPointMode::Final:
-                if(position == circuit->getGateCount() - 1)
-                    recordAssertPoint(position);
-                break;
-            case AssertPointMode::Middle:
-                if(position == circuit->getGateCount() / 2)
-                    recordAssertPoint(position);
-                break;
-            case AssertPointMode::Sparsity:
-                double cost = 1 - sparsity(_state);
-                if(position > circuit->getGateCount()/3 && cost < minCost)
+            case AssertPointMode::Point1:
+                if(position >= circuit->getGateCount()/5 && position < circuit->getGateCount()*2/5)
                 {
-                    minCost = cost;
-                    recordAssertPoint(position);
+                    double cost = 1 - sparsity(_state);
+                    if(cost < minCost)
+                    {
+                        minCost = cost;
+                        recordAssertPoint(position);
+                    }
                 }
                 break;
+            case AssertPointMode::Point2:
+                if(position >= circuit->getGateCount()*2/5 && position < circuit->getGateCount()*3/5)
+                {
+                    double cost = 1 - sparsity(_state);
+                    if(cost < minCost)
+                    {
+                        minCost = cost;
+                        recordAssertPoint(position);
+                    }
+                }
+                break;
+            case AssertPointMode::Point3:
+                if(position >= circuit->getGateCount()*3/5 && position < circuit->getGateCount()*4/5)
+                {
+                    double cost = 1 - sparsity(_state);
+                    if(cost < minCost)
+                    {
+                        minCost = cost;
+                        recordAssertPoint(position);
+                    }
+                }
+                break;
+            case AssertPointMode::Point4:
+                if(position >= circuit->getGateCount()*4/5 && position < circuit->getGateCount())
+                {
+                    double cost = 1 - sparsity(_state);
+                    if(cost < minCost)
+                    {
+                        minCost = cost;
+                        recordAssertPoint(position);
+                    }
+                }
+                break;
+            case AssertPointMode::Final:
+                if(position == circuit->getGateCount()-1)
+                    recordAssertPoint(position);
+                break;
+            case AssertPointMode::SR:
+                if(position >= circuit->getGateCount()/5)
+                {
+                    double d1 = position+1;
+                    double d2 = circuit->getGateCount()-1-position;
+                    double p = 1. - 1./(d1+d2);
+                    double DR = sparsity(_state);
+                    double cost = 1 - (pow(p, d1+dp+d2) / (pow(p, d1+dp) + (1-pow(p, d1+dp))*(1-DR)));
+
+                    if(cost < minCost)
+                    {
+                        minCost = cost;
+                        recordAssertPoint(position);
+                    }
+                }
+                break;
+            case AssertPointMode::EG:
+                if(position >= circuit->getGateCount()/5)
+                {
+                    double d1 = position+1;
+                    double d2 = circuit->getGateCount()-1-position;
+                    double p = 1. - 1./(d1+d2);
+                    double DR = sparsity(_state);
+                    double cost = ((d1+dp)*(1-pow(p, d1+dp)) + (d1+dp+d2)*(1-DR*(1-pow(p, d1+dp))))/(pow(p, d1+dp+d2));
+
+                    if(cost < minCost)
+                    {
+                        minCost = cost;
+                        recordAssertPoint(position);
+                    }
+                }
+                break;
+            default:
+                assert(0);
         }
     }
 }
@@ -110,6 +177,8 @@ void VanQiRA::synUa(const std::string filename)
     std::vector<std::string> esop;
 
     assert(_S); assert(_assertPoint != -1);
+	double sp = Cudd_CountMinterm(_ddManager, _S, _state->_rank) / pow(2, _state->_rank);
+    std::cout << "Sparsity: " << sp << '\n';
     synESOP(_ddManager, _S, _nQubits, esop); 
 
     writeQASM(filename, esop);

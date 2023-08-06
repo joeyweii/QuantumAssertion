@@ -9,7 +9,7 @@ from qiskit.quantum_info import Statevector
 
 
 if __name__ == '__main__':
-    successCount = 100
+    successCount = 5000
 
     U = readQasm(sys.argv[1])
     nQubits = U.num_qubits
@@ -21,8 +21,6 @@ if __name__ == '__main__':
     attempts = 0
     accNumGates = 0
     for i in range(successCount):
-        print(i)
-
         while(True):
             U_err = circInsertError(U, err_prob)
 
@@ -35,10 +33,8 @@ if __name__ == '__main__':
             if(fidNotOne(U_err_fid) == False):
                 break
 
-        delete_last_line()
-
     print("#Qubits: ", nQubits)
-    print("|U|: ", len(U.data))
     print("ErrProp: ", err_prob)
+    print("|U|: ", len(U.data))
     print("Success Rate: %.2f"%(successCount/attempts))
     print("Average #Gate: %.2f"%(accNumGates/successCount))
