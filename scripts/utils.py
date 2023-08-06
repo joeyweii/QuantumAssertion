@@ -138,8 +138,8 @@ def splitCirc(circ, point):
     nGates = len(circ.data)
     assert(point < nGates)
     nQubits = circ.num_qubits
-    circ1 = QuantumCircuit(QuantumRegister(nQubits, 'q'))
-    circ2 = QuantumCircuit(QuantumRegister(nQubits, 'q'))
+    circ1 = QuantumCircuit(nQubits)
+    circ2 = QuantumCircuit(nQubits)
     
     for i in range(nGates):
         if(i <= point):

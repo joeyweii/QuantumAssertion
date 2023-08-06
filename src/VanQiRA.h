@@ -5,9 +5,13 @@
 
 enum class AssertPointMode
 {
+    Point1,
+    Point2,
+    Point3,
+    Point4,
     Final,
-    Middle,
-    Sparsity
+    SR,
+    EG
 };
 
 class VanQiRA : public BDDSystem
@@ -25,7 +29,7 @@ public:
 
     ~VanQiRA();
 
-    void simUfindAssertPoint(const Circuit *circuit, const AssertPointMode assertPointMode);
+    void simUfindAssertPoint(const Circuit *circuit, const AssertPointMode assertPointMode, const double dp);
     void synUa(const std::string filename);
 private:
     int _nQubits;
