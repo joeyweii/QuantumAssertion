@@ -1,3 +1,5 @@
+# Usage: python3 detect.py <U qasm> <Ua qasm> <error probability>
+
 import re
 import sys
 import numpy as np
@@ -18,7 +20,7 @@ if __name__ == '__main__':
 
     U1, U2 = splitCirc(U, assertPoint)
 
-    err_prob = 0.25 / len(U1.data)
+    err_prob = float(sys.argv[3])
 
     gdnState = Statevector.from_instruction(U1)
 
@@ -85,24 +87,3 @@ if __name__ == '__main__':
     print("FP: ", fp, " %")
     print("FN: ", fn, " %")
     print("Detection Rate: ", detectionRate, " %")
-
-    with open (sys.argv[3], "a") as csvfile:
-        csvfile.write('%d'%nQubits)
-        csvfile.write(',')
-        csvfile.write('%d'%len(U.data))
-        csvfile.write(',')
-        csvfile.write('%d'%len(Ua.data))
-        csvfile.write(',')
-        csvfile.write('%d'%(assertPoint+1))
-        csvfile.write(',')
-        csvfile.write('%.5f'%err_prob)
-        csvfile.write(',')
-        csvfile.write('%.2f'%tp)
-        csvfile.write(',')
-        csvfile.write('%.2f'%tn)
-        csvfile.write(',')
-        csvfile.write('%.2f'%fp)
-        csvfile.write(',')
-        csvfile.write('%.2f'%fn)
-        csvfile.write(',')
-        csvfile.write('%.2f'%detectionRate)

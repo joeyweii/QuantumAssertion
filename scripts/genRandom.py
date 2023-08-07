@@ -1,5 +1,4 @@
-"Generate random Clifford+T+CCX circuits for equivalence checking"
-"Usage: python3 genCircs.py <#qubits> <#gates> <output_file> <seed>"
+# Usage: python3 genRandom.py <#qubits> <#gates> <output_file> <seed>
 
 import sys
 import random as rd

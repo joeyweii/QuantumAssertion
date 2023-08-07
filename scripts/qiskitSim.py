@@ -1,12 +1,11 @@
+# Usage: python3 ./qiskitSim.py <qasm file>
+
 import numpy as np
 import random as rd
 import sys
 from qiskit import *
 from qiskit.quantum_info import Statevector
 
-#### Usage
-# python3 ./qiskitSim.py <qasm file> 
-####
 if __name__ == '__main__':
   threshold = 1e-12
 

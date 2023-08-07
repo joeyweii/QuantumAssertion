@@ -1,3 +1,5 @@
+# Usage: python3 executeErr.py <U qasm> <Ua qasm> 
+
 import re
 import sys
 import numpy as np

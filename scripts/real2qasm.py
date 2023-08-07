@@ -1,13 +1,5 @@
-"""
-File       [real_2_qasm.py]
-Synopsis   [translate .real in a directory to .qasm]
-Author     [Chilsan Jhang]
-Modify     [2020/09/01]
-"""
+# Usage: python3 real_2_qasm.py <real file> <qasm file> 
 
-"""
-Usage: python3 real_2_qasm.py <real file> <qasm file> 
-"""
 import sys
 import os
 import re
