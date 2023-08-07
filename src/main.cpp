@@ -1,58 +1,62 @@
-#include <boost/program_options.hpp>
-#include <sys/time.h> 
+#include <sys/time.h>
 #include <fstream>
 
 #include "VanQiRA.h"
 #include "memMeasure.h"
 
-extern Circuit* qasmParser(const std::string& filename);
+int main(int argc, char **argv) {
+    bool fReorder = true;
+    int fInitBitWidth = 4;
+    std::string UFilename;
+    std::string UaFilename;
+    AssertPointMode assertPointMode;
+    double dp = 0.;
 
-int main(int argc, char **argv)
-{
-    // Program options
-    namespace po = boost::program_options;
-    po::options_description description("Options");
-    description.add_options()
-    ("help", "produce help message.")
-    ("reorder", po::value<bool>()->default_value(true), "allow variable reordering or not.\n"
-                                                             "0: disable 1: enable default: 1") 
-	("bitwidth_control", po::value<int>()->default_value(0), "bitwidth control when overflowing\n"
-												 "0: extendBitwidth 1: dropLSB")
-	("init_bitwidth", po::value<int>()->default_value(32), "initial bitwidth r\n"
-															"default: 32")
-    ("U", po::value<std::string>()->implicit_value(""), "circuit under assertion.")
-    ("Ua", po::value<std::string>()->implicit_value(""), "output assertion circuits.")
-    ("assert_point_mode", po::value<int>()->default_value(0), "assertion point\n"
-                                                         "0: point1\n"
-                                                         "1: point2\n"
-                                                         "2: point3\n"
-                                                         "3: point4\n"
-                                                         "4: final\n"
-                                                         "5: SR\n"
-                                                         "6: EG\n")
-    ("dp", po::value<int>()->default_value(0), "expected |Ua|\n")
-    ;
+    for (int i = 1; i < argc;) {
+        if (std::string(argv[i]) == "--U") {
+            UFilename = std::string(argv[i + 1]);
+            i += 2;
+        } else if (std::string(argv[i]) == "--Ua") {
+            UaFilename = std::string(argv[i + 1]);
+            i += 2;
+        } else if (std::string(argv[i]) == "--reorder") {
+            if (std::string(argv[i + 1]) == "0")
+                fReorder = false;
+            else if (std::string(argv[i + 1]) == "1")
+                fReorder = true;
+            else
+                assert(0 && "Parse -reorder option fail");
+            i += 2;
+        } else if (std::string(argv[i]) == "--init_bitwidth") {
+            fInitBitWidth = std::stoi(std::string(argv[i + 1]));
+            i += 2;
+        } else if (std::string(argv[i]) == "--dp") {
+            dp = std::stod(std::string(argv[i + 1]));
+            i += 2;
+        } else if (std::string(argv[i]) == "--assert_point_scenario") {
+            if (std::string(argv[i + 1]) == "1/5")
+                assertPointMode = AssertPointMode::TwentyPercent;
+            else if (std::string(argv[i + 1]) == "2/5")
+                assertPointMode = AssertPointMode::FortyPercent;
+            else if (std::string(argv[i + 1]) == "3/5")
+                assertPointMode = AssertPointMode::SixtyPercent;
+            else if (std::string(argv[i + 1]) == "4/5")
+                assertPointMode = AssertPointMode::EightyPercent;
+            else if (std::string(argv[i + 1]) == "final")
+                assertPointMode = AssertPointMode::Final;
+            else if (std::string(argv[i + 1]) == "success_rate")
+                assertPointMode = AssertPointMode::SR;
+            else if (std::string(argv[i + 1]) == "expected_gate_count")
+                assertPointMode = AssertPointMode::EG;
 
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, description), vm);
-    po::notify(vm);
+            i += 2;
+        } else
+            assert(0 && "Undefined options.");
+    }
 
-    if (vm.count("help") || argc == 1)
-    {
-	    std::cout << description;
-	    return 0;
-	}
+    Circuit *circuit = parseQASM(UFilename);
 
-    bool fReorder = vm["reorder"].as<bool>();
-	int	 fBitWidthControl = vm["bitwidth_control"].as<int>();
-	int	 fInitBitWidth = vm["init_bitwidth"].as<int>();
-    std::string UFilename(vm["U"].as<std::string>());
-    std::string UaFilename(vm["Ua"].as<std::string>());
-    AssertPointMode assertPointMode = static_cast<AssertPointMode>(vm["assert_point_mode"].as<int>());
-
-    Circuit *circuit = qasmParser(UFilename);
-
-	int nQubits = circuit->getNumberQubits();
+    int nQubits = circuit->getNumberQubits();
 
     struct timeval tStart, tFinish;
     double elapsedTime;
@@ -61,9 +65,11 @@ int main(int argc, char **argv)
 
     gettimeofday(&tStart, NULL);
 
-    VanQiRA vanqira(nQubits, fInitBitWidth, fBitWidthControl, fReorder);
+    VanQiRA vanqira(nQubits);
+    vanqira.setAutoReorder(fReorder);
+    vanqira.setInitBitWidth(fInitBitWidth);
 
-    vanqira.simUfindAssertPoint(circuit, assertPointMode, static_cast<double>(vm["dp"].as<int>()));
+    vanqira.simUfindAssertPoint(circuit, assertPointMode, dp);
     vanqira.synUa(UaFilename);
 
     gettimeofday(&tFinish, NULL);
@@ -72,14 +78,14 @@ int main(int argc, char **argv)
 
     runtime = elapsedTime / 1000.0;
     memPeak = getPeakRSS();
-    
+
     std::cout << "----- Circuit Info. -----\n";
     std::cout << "#Qubits: " << nQubits << '\n';
     std::cout << "#Gates in circuit: " << circuit->getGateCount() << '\n';
 
     std::cout << "----- Resource Usage -----\n";
     std::cout << "Runtime: " << runtime << " seconds\n";
-    std::cout << "Peak memory usage: " << memPeak << " bytes\n"; 
+    std::cout << "Peak memory usage: " << memPeak << " bytes\n";
     std::cout << "--------------------------\n";
 
     return 0;

@@ -1,3 +1,6 @@
 [submodule "lib/sliqsys"]
 	path = lib/sliqsys
 	url = https://github.com/joeyweii/sliqsys.git
+[submodule "lib/abc-exorcism-api"]
+	path = lib/abc-exorcism-api
+	url = https://github.com/joeyweii/abc-exorcism-api.git
