@@ -4,7 +4,7 @@ This repository helps you reproduce the experiments of [1].
 ## Build Project
 Clone the project
 ```
-$ git clone --recurse-submodules https://github.com/joeyweii/VanQiRA.git <path>
+$ git clone --recurse-submodules https://github.com/joeyweii/QuantumAssertion.git <path>
 $ cd <path>
 ```
 Build binary with CMake
